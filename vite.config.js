@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/wordle-pvp/',  // Replace with your repo name
+  base: './',  // or just '' also works for root
   plugins: [react(), tailwindcss()],
 })
+

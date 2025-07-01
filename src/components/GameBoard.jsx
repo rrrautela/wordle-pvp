@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+
 
 function GameBoard({
   boxesRefs                      // Ref to store all box DOM nodes for direct manipulation

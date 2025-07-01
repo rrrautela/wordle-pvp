@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && cd dist && git init && git add . && git commit -m 'Deploy' && git branch -M gh-pages && git remote add origin https://github.com/rrrautela/wordle-pvp.git && git push -f origin gh-pages && cd .."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.7",
