@@ -5,14 +5,14 @@ import arrayOfWords from "../data/all5letterwords.json"; // Adjust path if neede
 
 
 
-function GameWindow({handleGameOver}){
+function GameWindow({gameReset}){
 
-  // Refs used to persist values across re-renders
-  const boxesRefs = useRef([]); // References to all board boxes
-  const keysRefs = useRef([]); // References to all keyboard keys
-  const lettersSoFarRef = useRef(0); // Number of letters typed in current row
-  const ourWordSoFarRef = useRef(""); // Current word being typed by the user
-  const guessesSoFarRef = useRef(0); // Number of guesses made
+  // refs used so that we keep values across re-renders
+  const gameBoardBoxesRefs = useRef([]); //  all board boxes
+  const keyboardKeysRefs = useRef([]); // to all keyboard keys
+  const lettersInCurrentRowRef = useRef(0); // Number of letters typed in current row
+  const wordInputSoFarRef = useRef(""); // Current word being typed by the user
+  const guessesCountRef = useRef(0); // Number of guesses made
   const currentRowRef = useRef(0); // Current row index (0 to 5)
   const currentPositionRef = useRef(0); // Mirror of currentPosition for mutation
   const skipEffectJustThisOnceRef = useRef(false); // Control flag to skip an effect once if needed
@@ -25,13 +25,13 @@ function GameWindow({handleGameOver}){
 
   // Function triggered when user presses ENTER after typing 5 letters
   function checkGuess() {
-    const word = ourWordSoFarRef.current;
+    const word = wordInputSoFarRef.current;
 
     // If the guessed word is not in dictionary
     if (!arrayOfWords.includes(word)) {
       // Add shake animation to all 5 boxes in the current row
       for (let i = currentRowRef.current * 5; i < (currentRowRef.current + 1) * 5; i++) {
-        const box = boxesRefs.current[i];
+        const box = gameBoardBoxesRefs.current[i];
         box.classList.add("vibrate-horizontal");
         setTimeout(() => {
           box.classList.remove("vibrate-horizontal");
@@ -52,7 +52,7 @@ function GameWindow({handleGameOver}){
     // Animate box flip for all 5 letters
     for (let i = 0; i < 5; i++) {
       const globalIdx = currentRowRef.current * 5 + i;
-      const box = boxesRefs.current[globalIdx];
+      const box = gameBoardBoxesRefs.current[globalIdx];
       const color = getColor(word[i], i);
 
       // Flip animation (half flip first)
@@ -80,7 +80,8 @@ function GameWindow({handleGameOver}){
       for (let i = 0; i < 5; i++) {
         const letter = word[i];
         const idx = keyboard_keys.indexOf(letter);
-        const key = keysRefs.current[idx];
+        const key = keyboardKeysRefs
+    .current[idx];
         if (!key) continue;
 
         // Remove old bg-* classes (unless already green)
@@ -97,23 +98,24 @@ function GameWindow({handleGameOver}){
       // If guessed correctly
       if (word === correctWord){
         alert("YOU WIN");
-        handleGameOver();
+        gameReset();
       } else {
         // Prepare for next row
         currentRowRef.current++;
-        lettersSoFarRef.current = 0;
-        ourWordSoFarRef.current = "";
+        lettersInCurrentRowRef
+    .current = 0;
+        wordInputSoFarRef.current = "";
         currentPositionRef.current = (currentRowRef.current * 5);
       }
     }, delay * 5 + 300); // Delay to finish animation before updating
     
     //another guess is made, right or wrong doesnt matter
-    guessesSoFarRef.current++;
+    guessesCountRef.current++;
 
     //if all 6 chances for guessing are used, and word has not been guesseed right yet then you lose
-    if(guessesSoFarRef.current === 6){
+    if(guessesCountRef.current === 6){
       alert("YOU LOSE");
-      handleGameOver();
+      gameReset();
     }
   
   
@@ -128,7 +130,7 @@ function GameWindow({handleGameOver}){
     if (pos <= rowStart) return;
 
     const idx = pos - 1;
-    const box = boxesRefs.current[idx];
+    const box = gameBoardBoxesRefs.current[idx];
 
     // Clear the box UI
     if (box) {
@@ -137,8 +139,10 @@ function GameWindow({handleGameOver}){
     }
 
     // Update refs accordingly
-    lettersSoFarRef.current = Math.max(0, lettersSoFarRef.current - 1);
-    ourWordSoFarRef.current = ourWordSoFarRef.current.slice(0, -1);
+    lettersInCurrentRowRef
+.current = Math.max(0, lettersInCurrentRowRef
+  .current - 1);
+    wordInputSoFarRef.current = wordInputSoFarRef.current.slice(0, -1);
     const newPos = idx;
     currentPositionRef.current = newPos;
   }
@@ -146,7 +150,8 @@ function GameWindow({handleGameOver}){
   // Handle regular key presses (letter, enter, backspace)
   function keyPressed(key) {
     if (key === "ENTER") {
-      if (lettersSoFarRef.current === 5) checkGuess();
+      if (lettersInCurrentRowRef
+    .current === 5) checkGuess();
       return;
     }
 
@@ -156,13 +161,15 @@ function GameWindow({handleGameOver}){
     }
 
     // If already 5 letters typed, ignore input
-    if (lettersSoFarRef.current >= 5) return;
+    if (lettersInCurrentRowRef
+  .current >= 5) return;
 
     // Figure out which box to fill
     const rowStart = currentRowRef.current * 5;
-    const idx = rowStart + lettersSoFarRef.current;
+    const idx = rowStart + lettersInCurrentRowRef
+.current;
 
-    const box = boxesRefs.current[idx];
+    const box = gameBoardBoxesRefs.current[idx];
     if (box) {
       // Fill box with letter and style it
       box.textContent = key;
@@ -181,8 +188,9 @@ function GameWindow({handleGameOver}){
     }
 
     // Update internal state
-    ourWordSoFarRef.current += key;
-    lettersSoFarRef.current += 1;
+    wordInputSoFarRef.current += key;
+    lettersInCurrentRowRef
+.current += 1;
     const newPos = idx + 1;
     currentPositionRef.current = newPos;
   }
@@ -197,7 +205,8 @@ function GameWindow({handleGameOver}){
         backSpacePressed();
       } else if (e.key === "Enter") {
         e.preventDefault(); // Prevent default behavior of ENTER
-        if (lettersSoFarRef.current === 5) checkGuess();
+        if (lettersInCurrentRowRef
+      .current === 5) checkGuess();
         else alert("You haven't typed 5 letters yet!");
       }
     };
@@ -214,18 +223,18 @@ function GameWindow({handleGameOver}){
         {/* GameBoard renders the boxes and accepts refs/state */}
         <GameBoard
           checkGuess={checkGuess}
-          boxesRefs={boxesRefs}
+          gameBoardBoxesRefs={gameBoardBoxesRefs}
           currentPositionRef={currentPositionRef}
-          lettersSoFarRef={lettersSoFarRef}
+          lettersInCurrentRowRef={lettersInCurrentRowRef}
           skipEffectJustThisOnceRef={skipEffectJustThisOnceRef}
-          ourWordSoFarRef={ourWordSoFarRef}
+          wordInputSoFarRef={wordInputSoFarRef}
         />
 
         {/* KeyBoard renders clickable keys and calls keyPressed */}
         <KeyBoard 
           keyPressed={keyPressed}
           keyboard_keys={keyboard_keys}
-          keysRefs={keysRefs}
+          keyboardKeysRefs={keyboardKeysRefs}
         />
       </div>
     </div>

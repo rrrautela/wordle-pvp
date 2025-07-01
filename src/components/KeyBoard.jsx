@@ -1,13 +1,13 @@
 // import { useEffect, useState, useRef } from "react";
 
 // keyPressed: function to handle key press actions
-// keysRefs: ref to hold references to each keyboard button DOM node
+// keyboardKeysRefs: ref to hold references to each keyboard button DOM node
 // keyboard_keys: array of keys like ['Q', 'W', 'E', ..., 'Z', 'Enter', 'Backspace']
-function KeyBoard({ keyPressed, keysRefs, keyboard_keys }) {
+function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
 
-  // Ensure the keysRefs array has the correct length matching keyboard_keys
-  if (keysRefs.current.length !== keyboard_keys.length) {
-    keysRefs.current = Array(keyboard_keys.length);
+  // Ensure the keyboardKeysRefs array has the correct length matching keyboard_keys
+  if (keyboardKeysRefs.current.length !== keyboard_keys.length) {
+    keyboardKeysRefs.current = Array(keyboard_keys.length);
   }
 
   return (
@@ -17,7 +17,7 @@ function KeyBoard({ keyPressed, keysRefs, keyboard_keys }) {
         {keyboard_keys.slice(0, 10).map((keyboard_key, idx) => (
           <div key={idx}>
             <button
-              ref={(el) => (keysRefs.current[idx] = el)} // Save reference to the button at index idx
+              ref={(el) => (keyboardKeysRefs.current[idx] = el)} // Save reference to the button at index idx
               className="h-15 w-11 text-zinc-200 text-xl font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
               onClick={() => keyPressed(keyboard_key)} // Trigger the key press handler
             >
@@ -32,7 +32,7 @@ function KeyBoard({ keyPressed, keysRefs, keyboard_keys }) {
         {keyboard_keys.slice(10, 19).map((keyboard_key, idx) => (
           <div key={idx + 10}>
             <button
-              ref={(el) => (keysRefs.current[idx + 10] = el)} // Save reference to the button at index (idx + 10)
+              ref={(el) => (keyboardKeysRefs.current[idx + 10] = el)} // Save reference to the button at index (idx + 10)
               className="h-15 w-11 text-zinc-200 text-xl font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
               onClick={() => keyPressed(keyboard_key)}
             >
@@ -47,7 +47,7 @@ function KeyBoard({ keyPressed, keysRefs, keyboard_keys }) {
         {keyboard_keys.slice(19).map((keyboard_key, idx) => (
           <div key={idx + 19}>
             <button
-              ref={(el) => (keysRefs.current[idx + 19] = el)} // Save reference to the button at index (idx + 19)
+              ref={(el) => (keyboardKeysRefs.current[idx + 19] = el)} // Save reference to the button at index (idx + 19)
               onClick={() => keyPressed(keyboard_key)}
               className={
                 idx === 0 || idx === 8 // Special styling for 'Enter' and 'Backspace'
