@@ -55,6 +55,8 @@ function GameWindow({gameReset}){
       const box = gameBoardBoxesRefs.current[globalIdx];
       const color = getColor(word[i], i);
 
+      
+
       // Flip animation (half flip first)
       setTimeout(() => {
         box.style.transition = "transform 0.6s";

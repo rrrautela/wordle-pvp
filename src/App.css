@@ -16,6 +16,9 @@
 .vibrate-horizontal {
   animation: vibrate-horizontal 0.5s linear;
 }
+
+
+
 /* Apply to your boxes */
 .flip-box {
   display: inline-block;             /* ensure 3D works per-box */
