@@ -6,13 +6,11 @@ import MultiPlayer from './pages/MultiPlayer';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/single" element={<SinglePlayer />} />
-        <Route path="/multi" element={<MultiPlayer />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/single" element={<SinglePlayer />} />
+      <Route path="/multi" element={<MultiPlayer />} />
+    </Routes>
   );
 }
 
