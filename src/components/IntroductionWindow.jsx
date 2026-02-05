@@ -8,10 +8,10 @@ function Sample5BoxesComponent({ boxesRef, sampleWord }) {
         <div
           key={letter + idx}
           ref={(el) => (boxesRef.current[`${letter}${idx}`] = el)}
-          className="h-[40px] w-[40px] m-0.5 flex items-center justify-center border-2 border-neutral-700 text-2xl"
+          className="h-[25px] w-[25px] m-0.5 flex items-center justify-center border-2 border-neutral-700 text-2xl"
 
           >
-          <b>{letter}</b>
+          <b className="text-sm">{letter}</b>
         </div>
       ))}
     </div>
@@ -47,7 +47,7 @@ export default function IntroductionWindow({onClose}) {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        onClose?.();
+        if(onClose) onClose();
       }
     };
 
@@ -70,10 +70,12 @@ export default function IntroductionWindow({onClose}) {
   }, []);
 
   return (
-    <div ref = {wrapperRef} className="fixed top-1/2 left-1/2 z-50 transform -translate-x-1/2 -translate-y-1/2 w-[510px] h-[95vh] p-4 bg-black text-white shadow-xl rounded-lg overflow-auto">
-
-      <h1 className="text-3xl font-bold pb-4">How To Play?</h1>
-      Guess the Wordle in 6 tries.
+    <div ref = {wrapperRef} className="fixed top-1/2 left-1/2 z-50 transform -translate-x-1/2 -translate-y-1/2 w-9/10 h-[65vh] sm:w-[60vh] sm:h-[77vh] p-4 bg-black text-white shadow-xl rounded-lg overflow-auto">
+      <div className="flex justify-between">
+        <h1 className="text-lg font-bold pb-4">How To Play?</h1>
+        <button className = " text-2xl font-bold pb-4" onClick={onClose}>X</button>
+      </div>
+      <p className="text-sm">Guess the Word in 6 tries.</p>
       <ol className="list-decimal pl-6 pb-4">
         <li>Each guess must be a valid 5 letter word.</li>
         <li>The color of the tiles will change to show how close your guess was to the word.</li>
@@ -84,21 +86,21 @@ export default function IntroductionWindow({onClose}) {
 
       {/* correct letter guess example */}
       <Sample5BoxesComponent boxesRef={boxesRef} sampleWord="WORDY" />
-      <p><b>W</b> is in the word and in the correct spot.</p>
+      <p className="text-sm"><b>W</b> is in the word and in the correct spot.</p>
       <br />
 
       {/* partially correct letter guess example */}
       <Sample5BoxesComponent boxesRef={boxesRef} sampleWord="LIGHT" />
-      <p><b>I</b> is in the word but in the wrong spot.</p>
+      <p className="text-sm"><b>I</b> is in the word but in the wrong spot.</p>
       <br />
 
       {/* completely incorrect letter guess example */}
       <Sample5BoxesComponent boxesRef={boxesRef} sampleWord="ROGUE" />
-      <p><b>U</b> is not in the word, in any spot.</p>
+      <p className="text-sm"><b>U</b> is not in the word, in any spot.</p>
       <br />
 
       <hr className="my-2" />
-      Unlimited Wordle games all day long.
+      <p className="text-sm"> Unlimited Wordle games all day long.</p>
     </div>
   );
 }
