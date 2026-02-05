@@ -40,7 +40,7 @@ function GameWindow({ gameReset }) {
     "J",
     "K",
     "L",
-    "ENTER",
+    "⌫",
     "Z",
     "X",
     "C",
@@ -48,7 +48,7 @@ function GameWindow({ gameReset }) {
     "B",
     "N",
     "M",
-    "⌫",
+    "ENTER",
   ];
 
   // --- Initialize the Secret Word ---

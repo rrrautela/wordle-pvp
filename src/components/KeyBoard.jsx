@@ -83,7 +83,7 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
               className={
                 // First and last buttons are Enter + Backspace
                 // They are wider than normal letters
-                idx === 0? "h-12 sm:h-14 w-[15vw] sm:w-[80px] min-w-[28px] text-zinc-200 text-md font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
+                idx === 8? "h-12 sm:h-14 w-[15vw] sm:w-[80px] min-w-[28px] text-zinc-200 text-md font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
                   : "h-12 sm:h-14 w-[9vw] sm:w-[44px] min-w-[28px] text-zinc-200 text-xl font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
               } 
             >
