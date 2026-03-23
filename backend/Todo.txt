@@ -1,0 +1,11 @@
+Here are the 5 "Microsoft-ready" bullet points for your Wordle PvP project. These use the specific metrics and "cool terms" we discussed to show you aren't just a coder, but a Systems Engineer.
+
+Scalable Distributed Architecture: Architected a horizontally scalable backend using the Node.js Cluster module to distribute traffic across multiple CPU cores, simulating a production-grade environment capable of supporting 1M+ theoretical concurrent users.
+
+Real-Time State Synchronization: Integrated a Redis Pub/Sub messaging layer with Socket.io to synchronize game states across independent server nodes, ensuring 100% data consistency for multiplayer matches in a distributed cluster.
+
+High-Performance Data Serialization: Reduced network bandwidth by ~70% and memory overhead by 90% by implementing Protocol Buffers (Protobuf) for binary data transfer and custom Bitmasking to store 5-letter game results as single integers.
+
+Server-Authoritative Game Logic: Eliminated client-side tampering and "cheating" by implementing strict Server-Side Validation, where the backend maintains the source of truth for target words and performs all result calculations.
+
+Performance Benchmarking & Stress Testing: Conducted rigorous load testing using k6 to simulate 5,000+ concurrent virtual users on a local environment, optimizing the event loop to maintain sub-100ms latency under high-pressure scenarios.
