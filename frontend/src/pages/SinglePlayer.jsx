@@ -4,6 +4,7 @@ import IntroductionWindow from "../components/IntroductionWindow";
 import "../App.css";
 import { createGameEngine } from './../../../shared/gameEngine';
 import data from "../../../shared/data/all5letterwords.json";
+import { BACKEND_URL } from "../config";
 
 
 
@@ -31,7 +32,7 @@ function SinglePlayer({ user, setUser }) {
       console.log(`Mission Success: ${user.username}. Syncing result for ${guessCount} attempts...`);
 
       try {
-        const response = await fetch("http://localhost:5000/api/update-coins", {
+        const response = await fetch(`${BACKEND_URL}/api/update-coins`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -42,7 +43,12 @@ function SinglePlayer({ user, setUser }) {
           credentials: "include", 
         });
 
-        const data = await response.json();
+        let data = {};
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
+        }
 
         if (response.ok) {
           // SUCCESS: Update global state with the ACTUAL balance from the DB

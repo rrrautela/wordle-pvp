@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import SinglePlayer from "./pages/SinglePlayer";
 import MultiPlayer from "./pages/MultiPlayer";
+import { BACKEND_URL } from "./config";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -17,7 +18,7 @@ function App() {
     // Inside App.jsx -> useEffect
     async function checkAuth() {
       try {
-        const res = await fetch("http://localhost:5000/api/me", {
+        const res = await fetch(`${BACKEND_URL}/api/me`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -43,7 +44,7 @@ function App() {
   // --- LOGOUT: Terminate Server and Local Session ---
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/api/logout", {
+      await fetch(`${BACKEND_URL}/api/logout`, {
         method: "POST",
         credentials: "include",
       });

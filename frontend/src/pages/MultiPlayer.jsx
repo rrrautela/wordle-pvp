@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import GameWindow from "../components/GameWindow";
+import { BACKEND_URL } from "../config";
 
 export default function MultiPlayer({ user }) {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ export default function MultiPlayer({ user }) {
       : error;
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:5000", {
+    socketRef.current = io(BACKEND_URL, {
       withCredentials: true,
       transports: ["websocket"],
     });

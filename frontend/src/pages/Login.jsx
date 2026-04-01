@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { BACKEND_URL } from "../config";
 
 export default function Login({ setUser }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -26,14 +27,19 @@ export default function Login({ setUser }) {
         };
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         credentials: "include",
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (response.ok) {
         setUser(data.user);

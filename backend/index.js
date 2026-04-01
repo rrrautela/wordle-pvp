@@ -32,11 +32,15 @@ const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 // -------------------- App Initialization --------------------
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://wordle-pvp.vercel.app",
+];
 
 // Allow frontend origin and enable cookies
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend URL
+    origin: allowedOrigins,
     credentials: true, // allow sending cookies
   }),
 );
@@ -176,8 +180,8 @@ app.post("/api/login", async (req, res) => {
     res
       .cookie("token", token, {
         httpOnly: true, // JS cannot access cookie (prevents XSS)
-        secure: false, // allow HTTP (use true in production HTTPS)
-        sameSite: "lax", // works reliably for localhost frontend/backend during dev
+        secure: true, // required for HTTPS cross-site cookies
+        sameSite: "none", // required when frontend and backend are on different origins
         maxAge: 3600 * 1000, // 1 hour in milliseconds
       })
 
@@ -224,8 +228,8 @@ app.post("/api/logout", (req, res) => {
   res
     .clearCookie("token", {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      sameSite: "none",
+      secure: true,
     })
     .json({ message: "Logged out" });
 });
@@ -247,7 +251,7 @@ const server = http.createServer(app);
 // This enables real-time WebSocket communication
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Allow frontend origin
+    origin: allowedOrigins,
     credentials: true, // Allow cookies during handshake
   },
 });
@@ -453,7 +457,9 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start listening on port 5000
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
+// Start listening on the platform-assigned port in production, or 5000 locally
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log("Server running on port", PORT);
 });
