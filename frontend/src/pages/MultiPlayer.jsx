@@ -25,6 +25,9 @@ export default function MultiPlayer({ user }) {
       : error;
 
   useEffect(() => {
+    if (!BACKEND_URL) {
+      console.error("BACKEND_URL is undefined!");
+    }
     console.log("Connecting socket to:", BACKEND_URL);
     socketRef.current = io(BACKEND_URL, {
       withCredentials: true,

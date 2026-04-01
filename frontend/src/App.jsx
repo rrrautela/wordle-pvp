@@ -18,6 +18,9 @@ function App() {
     // Inside App.jsx -> useEffect
     async function checkAuth() {
       try {
+        if (!BACKEND_URL) {
+          console.error("BACKEND_URL is undefined!");
+        }
         const apiUrl = `${BACKEND_URL}/api/me`;
         console.log("API CALL:", apiUrl);
         const res = await fetch(apiUrl, {
@@ -46,6 +49,9 @@ function App() {
   // --- LOGOUT: Terminate Server and Local Session ---
   const handleLogout = async () => {
     try {
+      if (!BACKEND_URL) {
+        console.error("BACKEND_URL is undefined!");
+      }
       const apiUrl = `${BACKEND_URL}/api/logout`;
       console.log("API CALL:", apiUrl);
       await fetch(apiUrl, {

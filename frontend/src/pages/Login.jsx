@@ -29,6 +29,9 @@ export default function Login({ setUser }) {
         };
 
     try {
+      if (!BACKEND_URL) {
+        console.error("BACKEND_URL is undefined!");
+      }
       console.log("API CALL:", apiUrl);
       const response = await fetch(apiUrl, {
         method: "POST",

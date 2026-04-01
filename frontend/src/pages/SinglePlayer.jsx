@@ -32,6 +32,9 @@ function SinglePlayer({ user, setUser }) {
       console.log(`Mission Success: ${user.username}. Syncing result for ${guessCount} attempts...`);
 
       try {
+        if (!BACKEND_URL) {
+          console.error("BACKEND_URL is undefined!");
+        }
         const apiUrl = `${BACKEND_URL}/api/update-coins`;
         console.log("API CALL:", apiUrl);
         const response = await fetch(apiUrl, {
