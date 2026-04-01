@@ -11,6 +11,7 @@ export default function GameWindow({
   user,
   initialSyncState = null,
   gameCode = "",
+  onLeaveGame = null,
 }) {
   const controllerRef = useRef(null);
   if (!controllerRef.current) {
@@ -629,6 +630,17 @@ export default function GameWindow({
           }`}
         >
           <div className="mx-auto flex min-h-full w-full max-w-[1120px] flex-col items-center justify-start px-4 pt-15 sm:px-6 sm:pt-8">
+            {mode === "multi" && onLeaveGame && (
+              <div className="mb-4 flex w-full justify-end">
+                <button
+                  onClick={onLeaveGame}
+                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10"
+                >
+                  Leave Game
+                </button>
+              </div>
+            )}
+
             {messages.map((msg, i) => (
               <div
                 key={msg.id}

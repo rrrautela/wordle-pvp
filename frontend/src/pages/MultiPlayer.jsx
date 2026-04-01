@@ -24,6 +24,33 @@ export default function MultiPlayer({ user }) {
       ? "You need to log in to play multiplayer"
       : error;
 
+  function resetLocalGameState() {
+    setMode(null);
+    setGameCode("");
+    setInputCode("");
+    setGameStarted(false);
+    setSyncState(null);
+    setError("");
+  }
+
+  function handleLeaveGame({ skipConfirm = false } = {}) {
+    if (!skipConfirm) {
+      const confirmed = window.confirm(
+        "Are you sure you want to leave the game?",
+      );
+      if (!confirmed) return;
+    }
+
+    const socket = socketRef.current;
+    if (socket?.connected) {
+      socket.emit("leave_game");
+      socket.disconnect();
+    }
+
+    resetLocalGameState();
+    navigate("/");
+  }
+
   useEffect(() => {
     if (!BACKEND_URL) {
       console.error("BACKEND_URL is undefined!");
@@ -82,7 +109,13 @@ export default function MultiPlayer({ user }) {
       setError(message);
     });
 
+    socket.on("opponent_left", () => {
+      window.alert("Opponent left the game");
+      handleLeaveGame({ skipConfirm: true });
+    });
+
     return () => {
+      socket.off("opponent_left");
       socket.disconnect();
     };
   }, []);
@@ -139,11 +172,12 @@ export default function MultiPlayer({ user }) {
       <GameWindow
         mode="multi"
         gameController={socketController}
-        gameReset={() => window.location.reload()}
+        gameReset={() => handleLeaveGame({ skipConfirm: true })}
         onGameOver={() => {}}
         user={user}
         initialSyncState={syncState}
         gameCode={gameCode}
+        onLeaveGame={handleLeaveGame}
       />
     );
   }
@@ -248,6 +282,13 @@ export default function MultiPlayer({ user }) {
               <p className="mt-4 text-sm text-gray-400">
                 Waiting for opponent<span className="loading-dots" />
               </p>
+
+              <button
+                onClick={() => handleLeaveGame()}
+                className="mt-6 inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10"
+              >
+                Leave Game
+              </button>
             </div>
           )}
 
@@ -257,6 +298,13 @@ export default function MultiPlayer({ user }) {
               <p className="mt-2 text-sm text-gray-400">
                 Connecting you to the room<span className="loading-dots" />
               </p>
+
+              <button
+                onClick={() => handleLeaveGame()}
+                className="mt-6 inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10"
+              >
+                Leave Game
+              </button>
             </div>
           )}
             </>

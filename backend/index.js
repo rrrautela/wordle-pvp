@@ -328,6 +328,7 @@ io.use((socket, next) => {
 // Listen for new socket connections/reconnections
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id); // Log new socket connection
+  socket.isLeavingGame = false;
 
   const code = userGameMap.get(socket.userId); // Check if this user already belongs to a game
 
@@ -418,8 +419,36 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("leave_game", () => {
+    const code = userGameMap.get(socket.userId);
+    if (!code) return;
+
+    const game = games.get(code);
+    if (!game) return;
+
+    socket.isLeavingGame = true;
+
+    const player = getThePlayer(game, socket.userId);
+    const opponent = getTheOpponent(game, socket.userId);
+
+    if (player?.reconnectTimer) {
+      clearTimeout(player.reconnectTimer);
+      player.reconnectTimer = null;
+    }
+
+    socket.leave(code);
+
+    if (opponent?.isConnected) {
+      io.to(opponent.socketId).emit("opponent_left");
+    }
+
+    endGame(code);
+  });
+
   // Detect when this specific client disconnects and handle game state
   socket.on("disconnect", () => {
+    if (socket.isLeavingGame) return;
+
     // Retrieve game code associated with this disconnected user
     const code = userGameMap.get(socket.userId);
     if (!code) return;
