@@ -256,6 +256,32 @@ const io = new Server(server, {
   },
 });
 
+function serializePlayer(player) {
+  if (!player) return null;
+
+  return {
+    userId: player.userId,
+    guesses: Array.isArray(player.guesses) ? player.guesses : [],
+    hasWon: !!player.hasWon,
+  };
+}
+
+function serializeGameState(game) {
+  if (!game) return null;
+
+  return {
+    gameCode: game.code,
+    roomCode: game.code,
+    status: game.status,
+    winner: game.winner || null,
+    currentTurnPlayerId: null,
+    players: {
+      host: serializePlayer(game.players?.host),
+      opponent: serializePlayer(game.players?.opponent),
+    },
+  };
+}
+
 function extractFromCookie(cookieString) {
   const cookies = cookieString.split(";");
 
@@ -330,25 +356,7 @@ io.on("connection", (socket) => {
     }
 
     // send full game state to ONLY this reconnected player
-    socket.emit("sync-state", {
-      gameCode: code,
-      status: game.status,
-      winner: game.winner || null,
-      players: {
-        host: {
-          userId: game.players.host.userId,
-          guesses: game.players.host.guesses,
-          hasWon: game.players.host.hasWon,
-        },
-        opponent: game.players.opponent
-          ? {
-              userId: game.players.opponent.userId,
-              guesses: game.players.opponent.guesses,
-              hasWon: game.players.opponent.hasWon,
-            }
-          : null,
-      },
-    });
+    socket.emit("sync-state", serializeGameState(game));
   } else {
     console.log("user not in a game rn"); // User is not reconnecting to an existing game
   }
@@ -364,7 +372,10 @@ io.on("connection", (socket) => {
     if (result.success) {
       // Successfully created game; join the specific room code
       socket.join(result.code); //join room
-      socket.emit("game-created", result.code); //send code back to creator
+      socket.emit("game-created", {
+        code: result.code,
+        roomCode: result.code,
+      }); //send code back to creator
     } else {
       // Notify client of failure to create game (e.g., already in a game)
       socket.emit("error", result.error);
@@ -381,7 +392,7 @@ io.on("connection", (socket) => {
 
     if (result.success) {
       socket.join(code);
-      io.to(code).emit("game-started");
+      io.to(code).emit("game-started", serializeGameState(result.game));
     } else {
       socket.emit("error", result.error);
     }

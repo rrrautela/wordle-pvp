@@ -78,19 +78,28 @@ export default function GameWindow({
     "ENTER",
   ];
 
+  const sharedPlayers = initialSyncState?.players || {};
+  const hostPlayer = sharedPlayers?.host || null;
+  const opponentPlayer = sharedPlayers?.opponent || null;
+  const resolvedRoomCode =
+    gameCode || initialSyncState?.gameCode || initialSyncState?.roomCode || "";
+  const currentTurnPlayerId = initialSyncState?.currentTurnPlayerId ?? null;
+
   const myProgressCount = currentRowRef.current;
   const opponentProgressCount = opponentRows.filter((row) =>
     row.some(Boolean),
   ).length;
   const myDisplayName = user?.username || "You";
   const opponentDisplayName =
-    initialSyncState?.players?.host?.userId === user?.id
-      ? initialSyncState?.players?.opponent?.username ||
-        initialSyncState?.players?.opponent?.name ||
+    hostPlayer?.userId === user?.id
+      ? opponentPlayer?.username ||
+        opponentPlayer?.name ||
         "Opponent"
-      : initialSyncState?.players?.host?.username ||
-        initialSyncState?.players?.host?.name ||
+      : hostPlayer?.username ||
+        hostPlayer?.name ||
         "Opponent";
+  const isMyTurn =
+    currentTurnPlayerId == null || currentTurnPlayerId === user?.id;
 
   const statusLabel =
     mode !== "multi"
@@ -101,7 +110,9 @@ export default function GameWindow({
           ? "Waiting for opponent move..."
           : opponentPulse
             ? "Opponent is guessing..."
-            : "Your turn";
+            : isMyTurn
+              ? "Your turn"
+              : "Opponent's turn";
 
   function resetOpponentReconnectState(showNotice = false) {
     setIsOpponentDisconnected(false);
@@ -241,16 +252,14 @@ export default function GameWindow({
     }
 
     const myPlayer =
-      initialSyncState.players?.host?.userId === user.id
-        ? initialSyncState.players.host
-        : initialSyncState.players?.opponent?.userId === user.id
-          ? initialSyncState.players.opponent
+      hostPlayer?.userId === user.id
+        ? hostPlayer
+        : opponentPlayer?.userId === user.id
+          ? opponentPlayer
           : null;
 
     const otherPlayer =
-      initialSyncState.players?.host?.userId === user.id
-        ? initialSyncState.players?.opponent
-        : initialSyncState.players?.host;
+      hostPlayer?.userId === user.id ? opponentPlayer : hostPlayer;
 
     if (!myPlayer) return;
 
@@ -260,7 +269,10 @@ export default function GameWindow({
 
     myPlayer.guesses?.forEach((entry, rowIndex) => {
       const guess = entry.guess || "";
-      const result = entry.result;
+      const result = entry?.result;
+      const letterResults = Array.isArray(result?.letterResults)
+        ? result.letterResults
+        : [];
 
       for (let i = 0; i < 5; i++) {
         const globalIdx = rowIndex * 5 + i;
@@ -276,9 +288,9 @@ export default function GameWindow({
           "font-bold",
         );
 
-        if (result?.letterResults?.[i]) {
+        if (letterResults[i]) {
           box.classList.remove("border-2", "border-neutral-700");
-          box.classList.add(result.letterResults[i]);
+          box.classList.add(letterResults[i]);
         } else {
           box.classList.add("border-zinc-500");
         }
@@ -287,7 +299,9 @@ export default function GameWindow({
 
     otherPlayer?.guesses?.forEach((entry, rowIndex) => {
       nextOpponentRows[rowIndex] =
-        entry.result?.letterResults || Array(5).fill("");
+        Array.isArray(entry?.result?.letterResults)
+          ? entry.result.letterResults
+          : Array(5).fill("");
     });
 
     setOpponentRows(nextOpponentRows);
@@ -297,7 +311,7 @@ export default function GameWindow({
         for (let i = 0; i < 5; i++) {
           const globalIdx = rowIndex * 5 + i;
           const box = opponentBoardBoxesRefs.current[globalIdx];
-          const resultColor = entry.result?.letterResults?.[i];
+          const resultColor = entry?.result?.letterResults?.[i];
           if (!box || !resultColor) continue;
           box.classList.remove("border-2", "border-neutral-700");
           box.classList.add(resultColor);
@@ -307,18 +321,21 @@ export default function GameWindow({
 
     myPlayer.guesses?.forEach((entry) => {
       const guess = entry.guess || "";
-      const result = entry.result;
+      const result = entry?.result;
+      const letterResults = Array.isArray(result?.letterResults)
+        ? result.letterResults
+        : [];
       for (let i = 0; i < 5; i++) {
         const letter = guess[i];
         const keyIndex = keyboard_keys.indexOf(letter);
         const keyElement = keyboardKeysRefs.current[keyIndex];
-        if (!keyElement || !result?.letterResults?.[i]) continue;
+        if (!keyElement || !letterResults[i]) continue;
 
         if (!keyElement.classList.contains("bg-green-800")) {
           keyElement.classList.forEach(
             (cls) => cls.startsWith("bg-") && keyElement.classList.remove(cls),
           );
-          keyElement.classList.add(result.letterResults[i]);
+          keyElement.classList.add(letterResults[i]);
         }
       }
     });
@@ -368,11 +385,20 @@ export default function GameWindow({
   }, [messages.length]);
 
   function processResult(result) {
+    if (!result) return;
+
     const isMine = mode === "single" || result.playerId === user.id;
+    const letterResults = Array.isArray(result?.letterResults)
+      ? result.letterResults
+      : [];
+    const guessWord = result?.guess || "";
+    const guessNumber = Number.isFinite(result?.guessNumber)
+      ? result.guessNumber
+      : 1;
 
     if (mode === "multi" && !isMine) {
       const animationDelay = 300;
-      const rowIndex = result.guessNumber - 1;
+      const rowIndex = Math.max(0, guessNumber - 1);
 
       if (isOpponentDisconnected) {
         console.log("Opponent reconnected");
@@ -382,7 +408,7 @@ export default function GameWindow({
       for (let i = 0; i < 5; i++) {
         const globalIdx = rowIndex * 5 + i;
         const box = opponentBoardBoxesRefs.current[globalIdx];
-        const resultColor = result.letterResults[i];
+        const resultColor = letterResults[i];
 
         if (!box) continue;
 
@@ -406,7 +432,8 @@ export default function GameWindow({
       setTimeout(() => {
         setOpponentRows((prev) => {
           const newRows = [...prev];
-          newRows[rowIndex] = result.letterResults;
+          newRows[rowIndex] =
+            letterResults.length > 0 ? letterResults : Array(5).fill("");
           return newRows;
         });
       }, animationDelay * 5 + 300);
@@ -420,6 +447,7 @@ export default function GameWindow({
       const start = currentRowRef.current * 5;
       for (let i = start; i < start + 5; i++) {
         const box = gameBoardBoxesRefs.current[i];
+        if (!box) continue;
         box.classList.add("vibrate-horizontal");
         setTimeout(() => box.classList.remove("vibrate-horizontal"), 500);
       }
@@ -432,7 +460,8 @@ export default function GameWindow({
     for (let i = 0; i < 5; i++) {
       const globalIdx = currentRowRef.current * 5 + i;
       const box = gameBoardBoxesRefs.current[globalIdx];
-      const resultColor = result.letterResults[i];
+      const resultColor = letterResults[i];
+      if (!box) continue;
 
       setTimeout(() => {
         box.style.transition = "transform 0.6s";
@@ -453,7 +482,7 @@ export default function GameWindow({
 
     setTimeout(() => {
       for (let i = 0; i < 5; i++) {
-        const letter = result.guess[i];
+        const letter = guessWord[i];
         const keyIndex = keyboard_keys.indexOf(letter);
         const keyElement = keyboardKeysRefs.current[keyIndex];
         if (!keyElement) continue;
@@ -462,20 +491,22 @@ export default function GameWindow({
           keyElement.classList.forEach(
             (cls) => cls.startsWith("bg-") && keyElement.classList.remove(cls),
           );
-          keyElement.classList.add(result.letterResults[i]);
+          if (letterResults[i]) {
+            keyElement.classList.add(letterResults[i]);
+          }
         }
       }
 
       if (result.status === "correct") {
         const rewards = [100, 80, 60, 40, 20, 10];
-        const wonAmount = rewards[result.guessNumber - 1] || 0;
+        const wonAmount = rewards[guessNumber - 1] || 0;
 
         setEarnedCoins(wonAmount);
         setWinMsg(true);
         bounceAllBoxes();
 
         if (onGameOver) {
-          onGameOver("correct", result.guessNumber);
+          onGameOver("correct", guessNumber);
         }
 
         setTimeout(() => {
@@ -636,9 +667,9 @@ export default function GameWindow({
                   <div className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-gray-200 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
                     {statusLabel}
                   </div>
-                  {gameCode && (
+                  {resolvedRoomCode && (
                     <div className="text-xs font-medium tracking-[0.24em] text-gray-500">
-                      ROOM {gameCode}
+                      ROOM {resolvedRoomCode}
                     </div>
                   )}
                   {reconnectNotice && (

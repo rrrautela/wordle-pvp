@@ -8,7 +8,7 @@ export default function OpponentBoard({ opponentRows, opponentBoardBoxesRefs }) 
   function renderSingleBox(_, index) {
     const rowIndex = Math.floor(index / 5);
     const colIndex = index % 5;
-    const color = opponentRows[rowIndex][colIndex];
+    const color = opponentRows?.[rowIndex]?.[colIndex] || "";
 
     return (
       <div

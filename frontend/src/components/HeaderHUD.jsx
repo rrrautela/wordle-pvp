@@ -33,7 +33,7 @@ export default function HeaderHUD({ user, onLogout }) {
           className="flex h-11 w-11 items-center justify-center rounded-full border border-white/8 bg-[#1e1f22] shadow-[0_10px_24px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-105"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2b2d31] text-xs font-bold text-white">
-            {user.username ? user.username[0].toUpperCase() : "G"}
+            {user?.username?.[0] ? user.username[0].toUpperCase() : "G"}
           </div>
         </button>
 

@@ -49,18 +49,26 @@ export default function MultiPlayer({ user }) {
     socket.on("sync-state", (data) => {
       console.log("SYNC STATE:", data);
       setSyncState(data);
-      setGameCode(data?.gameCode || "");
+      setGameCode(data?.gameCode || data?.roomCode || "");
       setMode("rejoin");
       setError("");
       setGameStarted(true);
     });
 
-    socket.on("game-created", (code) => {
-      setGameCode(code);
+    socket.on("game-created", (payload) => {
+      const nextCode =
+        typeof payload === "string"
+          ? payload
+          : payload?.code || payload?.gameCode || payload?.roomCode || "";
+      setGameCode(nextCode);
     });
 
-    socket.on("game-started", () => {
-      console.log("GAME STARTED");
+    socket.on("game-started", (data) => {
+      console.log("GAME STARTED", data);
+      if (data) {
+        setSyncState(data);
+        setGameCode(data?.gameCode || data?.roomCode || "");
+      }
       setError("");
       setGameStarted(true);
     });
