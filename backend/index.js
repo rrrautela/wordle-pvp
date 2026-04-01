@@ -282,6 +282,24 @@ function serializeGameState(game) {
   };
 }
 
+function attachSocketToExistingPlayer(game, socket) {
+  if (!game) return null;
+
+  const player = getThePlayer(game, socket.userId);
+  if (!player) return null;
+
+  player.socketId = socket.id;
+  player.isConnected = true;
+
+  if (player.reconnectTimer) {
+    clearTimeout(player.reconnectTimer);
+    player.reconnectTimer = null;
+  }
+
+  socket.join(game.code);
+  return player;
+}
+
 function extractFromCookie(cookieString) {
   const cookies = cookieString.split(";");
 
@@ -341,20 +359,7 @@ io.on("connection", (socket) => {
     const player = getThePlayer(game, socket.userId); // Identify whether this user is host or opponent
     if (!player) return; // Exit if user is not found inside the game
 
-    // Socket connection changed, so update the stored socket ID
-    player.socketId = socket.id;
-
-    // Mark player as reconnected
-    player.isConnected = true;
-
-    // Rejoin the game room because the old socket left it on disconnect
-    socket.join(code);
-
-    // Cancel the disconnect timer since the player came back
-    if (player.reconnectTimer) {
-      clearTimeout(player.reconnectTimer);
-      player.reconnectTimer = null;
-    }
+    attachSocketToExistingPlayer(game, socket);
 
     // send full game state to ONLY this reconnected player
     socket.emit("sync-state", serializeGameState(game));
@@ -368,6 +373,15 @@ io.on("connection", (socket) => {
 
   // Event handler for initiating a new game session
   socket.on("create-game", () => {
+    const existingCode = userGameMap.get(socket.userId);
+    const existingGame = existingCode ? games.get(existingCode) : null;
+
+    if (existingGame && getThePlayer(existingGame, socket.userId)) {
+      attachSocketToExistingPlayer(existingGame, socket);
+      socket.emit("room_state", serializeGameState(existingGame));
+      return;
+    }
+
     const result = createGame(socket.userId, socket.id);
 
     if (result.success) {
@@ -386,6 +400,22 @@ io.on("connection", (socket) => {
   
   socket.on("join-game", (code) => {
     console.log("JOIN ATTEMPT:", code, "USER:", socket.userId);
+
+    const existingCode = userGameMap.get(socket.userId);
+    const existingGame = existingCode ? games.get(existingCode) : null;
+
+    if (existingGame && getThePlayer(existingGame, socket.userId)) {
+      attachSocketToExistingPlayer(existingGame, socket);
+      socket.emit("room_state", serializeGameState(existingGame));
+      return;
+    }
+
+    const targetGame = games.get(code);
+    if (targetGame && getThePlayer(targetGame, socket.userId)) {
+      attachSocketToExistingPlayer(targetGame, socket);
+      socket.emit("room_state", serializeGameState(targetGame));
+      return;
+    }
 
     const result = joinGame(code, socket.userId, socket.id);
 

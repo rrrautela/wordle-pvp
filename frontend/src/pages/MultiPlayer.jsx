@@ -24,6 +24,22 @@ export default function MultiPlayer({ user }) {
       ? "You need to log in to play multiplayer"
       : error;
 
+  function applySharedRoomState(data, source = "room_state") {
+    console.log(source.toUpperCase(), data);
+    setSyncState(data || null);
+    setGameCode(data?.gameCode || data?.roomCode || "");
+    setError("");
+
+    if (data?.status === "waiting") {
+      setMode("create");
+      setGameStarted(false);
+      return;
+    }
+
+    setMode("rejoin");
+    setGameStarted(true);
+  }
+
   function resetLocalGameState() {
     setMode(null);
     setGameCode("");
@@ -74,12 +90,11 @@ export default function MultiPlayer({ user }) {
     });
 
     socket.on("sync-state", (data) => {
-      console.log("SYNC STATE:", data);
-      setSyncState(data);
-      setGameCode(data?.gameCode || data?.roomCode || "");
-      setMode("rejoin");
-      setError("");
-      setGameStarted(true);
+      applySharedRoomState(data, "sync-state");
+    });
+
+    socket.on("room_state", (data) => {
+      applySharedRoomState(data, "room_state");
     });
 
     socket.on("game-created", (payload) => {
@@ -115,6 +130,7 @@ export default function MultiPlayer({ user }) {
     });
 
     return () => {
+      socket.off("room_state");
       socket.off("opponent_left");
       socket.disconnect();
     };
