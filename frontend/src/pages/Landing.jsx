@@ -4,10 +4,10 @@ export default function Landing({ setUser }) {
   const navigate = useNavigate();
 
   const playAsGuest = () => {
-    const guestUser = { 
-      guest: true, 
-      username: "Guest_Infiltrator", 
-      coins: 0 
+    const guestUser = {
+      guest: true,
+      username: "Guest_Infiltrator",
+      coins: 0,
     };
     setUser(guestUser);
     localStorage.setItem("wordle_guest", JSON.stringify(guestUser));
@@ -15,55 +15,55 @@ export default function Landing({ setUser }) {
   };
 
   return (
-    <div className="relative h-screen w-full bg-[#1a1a1b] flex flex-col items-center justify-center text-white font-sans overflow-hidden">
-      
-      {/* Background Aesthetic */}
-      <div className="absolute w-[600px] h-[600px] bg-[#6aaa64]/5 rounded-full blur-[120px] -top-20 -left-20" />
-      <div className="absolute w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] -bottom-20 -right-20" />
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#121213] px-6 py-12 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(76,175,80,0.08),transparent_28%)]" />
 
-      <div className="relative z-10 text-center mb-16 animate-in fade-in zoom-in duration-1000">
-        <h1 className="text-7xl font-black italic tracking-tighter uppercase bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
-          Protocol_Wordle
-        </h1>
-        <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-[0.5em] mt-4">
-          Select_Access_Level // System_Version_2.0
-        </p>
-      </div>
-
-      <div className="relative z-10 flex flex-col sm:flex-row gap-8 w-full max-w-4xl px-6">
-        {/* Guest Access Card */}
-        <button 
-          onClick={playAsGuest}
-          className="group relative flex-1 p-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:-translate-y-2"
-        >
-          <div className="relative z-10 text-left">
-            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Level 01</span>
-            <h2 className="text-3xl font-bold mt-2 text-white italic uppercase">Guest_Access</h2>
-            <p className="text-zinc-400 text-sm mt-4 leading-relaxed">
-              Anonymous entry. Local practice only. No coin synthesis or profile persistence.
-            </p>
-            <div className="mt-10 text-xs font-bold text-white/40 group-hover:text-white transition-colors">
-              INITIALIZE_BOOT →
-            </div>
+      <div className="relative mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl flex-col items-center justify-center">
+        <div className="mb-12 max-w-2xl text-center animate-in fade-in zoom-in duration-700">
+          <div className="mx-auto mb-5 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-gray-300">
+            Wordle PvP
           </div>
-        </button>
+          <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl">
+            Wordle PvP
+          </h1>
+          <p className="mt-4 text-base leading-7 text-gray-400 sm:text-lg">
+            Solo or multiplayer.
+          </p>
+        </div>
 
-        {/* Elite Terminal Card */}
-        <button 
-          onClick={() => navigate("/login")}
-          className="group relative flex-1 p-10 bg-[#6aaa64]/5 border border-[#6aaa64]/10 rounded-[2.5rem] transition-all duration-500 hover:border-[#6aaa64]/40 hover:bg-[#6aaa64]/10 hover:-translate-y-2"
-        >
-          <div className="relative z-10 text-left">
-            <span className="text-[10px] text-[#6aaa64] font-black uppercase tracking-widest">Level 02</span>
-            <h2 className="text-3xl font-bold mt-2 text-[#6aaa64] italic uppercase">Elite_Terminal</h2>
-            <p className="text-zinc-300 text-sm mt-4 leading-relaxed">
-              Identity sync. Earn up to 100 coins per win. Full access to the competitive network.
-            </p>
-            <div className="mt-10 text-xs font-bold text-[#6aaa64]/60 group-hover:text-[#6aaa64] transition-colors">
-              ESTABLISH_LINK →
+        <div className="grid w-full max-w-4xl gap-6 sm:grid-cols-2">
+          <button
+            onClick={() => navigate("/login")}
+            className="group rounded-3xl border border-white/10 bg-[#1e1f22] p-8 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-[1.02] hover:border-[#4CAF50]/60 hover:shadow-[0_22px_44px_rgba(0,0,0,0.34)] active:scale-[0.99]"
+          >
+            <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4CAF50]/15 text-xl font-bold text-[#4CAF50]">
+              P
             </div>
-          </div>
-        </button>
+            <p className="text-sm font-medium text-[#4CAF50]">Recommended</p>
+            <h2 className="mt-2 text-3xl font-bold">Play online</h2>
+            <p className="mt-3 text-sm leading-6 text-gray-400">Play online.</p>
+            <div className="mt-8 inline-flex items-center rounded-2xl bg-[#4CAF50] px-5 py-3 text-sm font-semibold text-black transition-all duration-200 group-hover:brightness-110">
+              Continue to login
+            </div>
+          </button>
+
+          <button
+            onClick={playAsGuest}
+            className="group rounded-3xl border border-white/10 bg-[#1e1f22] p-8 text-left shadow-[0_18px_40px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-[1.02] hover:border-white/20 hover:shadow-[0_22px_44px_rgba(0,0,0,0.34)] active:scale-[0.99]"
+          >
+            <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/8 text-xl font-bold text-white">
+              G
+            </div>
+            <p className="text-sm font-medium text-gray-300">Quick start</p>
+            <h2 className="mt-2 text-3xl font-bold">Play as guest</h2>
+            <p className="mt-3 text-sm leading-6 text-gray-400">Play locally.</p>
+            <div className="mt-8 inline-flex items-center rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition-all duration-200 group-hover:bg-white/10">
+              Continue as guest
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-10 text-center text-sm text-gray-500">Choose a mode.</div>
       </div>
     </div>
   );

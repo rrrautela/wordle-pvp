@@ -4,11 +4,11 @@
  * Handles word selection, validation, scoring, and state management.
  */
 
-// thisgame ngine is a factory func as at every call it returns a  new object which have all thes eproerties
+// this game ngine is a factory func as at every call it returns a  new object which have all thes eproerties
+// import data from "./data/all5letterwords.json";
+// const dictionary = data.dictionary;
 
-import { dictionary } from "./data/all5letterwords.json";
-
-export const createGameEngine = (forcedWord = null) => {
+export const createGameEngine = (dictionary, forcedWord = null) => {
   // --- PRIVATE STATE ---
   const randomIndex = Math.floor(Math.random() * dictionary.length);
   // Ensure word is uppercase for consistent comparison
@@ -19,7 +19,7 @@ export const createGameEngine = (forcedWord = null) => {
   let guessCount = 0;
   let isGameOver = false;
 
-  console.log("Terminal Secret Key:", secretWord);
+  console.log("Correct Word:", secretWord);
 
   /**
    * Core Logic: Determine letter color based on official Wordle rules.
@@ -59,10 +59,7 @@ export const createGameEngine = (forcedWord = null) => {
   };
 
   return {
-    /**
-     * submitGuess(word)
-     * Entry point for the UI. Returns status and color data.
-     */
+    // Public method to submit a guess and receive feedback
     submitGuess(word) {
       if (isGameOver) return { status: "ended" };
 
@@ -108,8 +105,11 @@ export const createGameEngine = (forcedWord = null) => {
       };
     },
 
+    // For testing and game management purposes
     getCorrectWord: () => secretWord,
 
+
+    // Expose internal state for game management
     getState: () => ({
       guessCount,
       isGameOver,

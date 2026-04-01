@@ -1,4 +1,18 @@
-import { createGameEngine } from "../shared/gameEngine";
+
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createGameEngine } from "../shared/gameEngine.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dictionary = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../shared/data/all5letterwords.json"), "utf-8")
+);
+
+// use it:
+
 
 const games = new Map();
 // In-memory store for all active games
@@ -61,14 +75,18 @@ function createGame(userId, socketId) {
 
   const code = generateGameCode();
 
-  const hostEngine = createGameEngine();
+  const hostEngine = createGameEngine(dictionary);
   const correctWord = hostEngine.getCorrectWord();
 
   // initialize game state
   games.set(code, {
     code,
     correctWord,
-    engine: hostEngine,
+    isProcessing: false, // concurrency guard for guesses
+    engines: {
+      host: hostEngine,
+      opponent: createGameEngine(dictionary, correctWord), // opponent gets same word for fairness
+    },
     players: {
       host: {
         userId,
@@ -78,11 +96,13 @@ function createGame(userId, socketId) {
         isConnected: true,
         disconnectedTime: null,
         reconnectTimer: null,
+        engine: hostEngine,
       },
       opponent: null, // empty slot until someone joins
     },
 
     status: "waiting", // waiting -> active -> finished (later)
+    winner: null
   });
 
   // map user to this game
@@ -122,6 +142,7 @@ function joinGame(code, userId, socketId) {
     guesses: [],
     isConnected: true,
     reconnectTimer: null,
+    engine: game.engines.opponent,
   };
 
   game.status = "active"; // both players present
@@ -132,31 +153,52 @@ function joinGame(code, userId, socketId) {
 }
 
 function handleGuess(userId, guess) {
-  const code = userGameMap.get(userId);
+  const code = userGameMap.get(userId); // find the game code this user is associated with
   if (!code) return;
 
-  const game = games.get(code);
+  const game = games.get(code); //find the game this user is in
   if (!game) return;
 
-  if (game.status !== "active") return;
-  if (!guess || guess.length !== 5) return;
+  if (game.isProcessing) return; // guard against concurrent guesses
+  game.isProcessing = true;
 
-  const player = getThePlayer(game, userId);
+  try {
+    if (game.status == "waiting") return;
+    if (!guess || guess.length !== 5) return;
 
-  if (!player) return;
+    const player = getThePlayer(game, userId);
 
-  const result = game.engine.submitGuess(guess);
+    if (!player) return;
 
-  player.guesses.push({
-    guess,
-    result,
-  });
+    if(player.engine.getState().isGameOver) return; // prevent guessing after game over
 
-  return {
-    playerId,
-    guess,
-    ...result,
-  };
+    const engineResult = player.engine.submitGuess(guess);
+
+    player.guesses.push({
+      guess,
+      result: engineResult,
+    });
+
+    if (engineResult.status === "correct") {
+      player.hasWon = true;
+
+      if (!game.winner) {
+        game.winner = player.userId;
+        game.status = "finished";
+      }
+    }
+    return {
+      code,
+      result: {
+        playerId: player.userId,
+        guess,
+        ...engineResult,
+      },
+    };
+
+  } finally {
+    game.isProcessing = false;
+  }
 }
 
 function endGame(code) {
@@ -190,14 +232,39 @@ export {
   endGame,
 };
 
-// One last backend improvement I'd strongly recommend
 
-// Right now your server allows multiple guesses at the same time.
 
-// Rarely, two socket events may arrive in the same event loop tick.
+// ookay lets do this 
 
-// This can cause guess order bugs.
 
-// There is a simple fix using a "game lock" flag that takes only 4 lines and eliminates that race condition.
+// No handling for "game-ended"
 
-// If you want, I can show it.
+// Backend emits:
+
+// io.to(code).emit("game-ended", { winner })
+
+// But frontend never listens.
+
+// 👉 So:
+
+// opponent wins → YOU won’t know cleanly
+// UI depends only on local state
+
+// Not fatal, but incomplete.
+
+// these too
+// vc
+
+// Giev code to be added in front end for allthese :), i think frotnend needs lot of more sytuff
+
+
+// also lets resolve this tooo: 6. ⚠️ Minor: socket cleanup is okay but minimal
+
+// You only remove:
+
+// socket.off("guess-result")
+
+// If later you add more listeners → memory leaks.
+
+
+// One by one

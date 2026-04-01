@@ -1,4 +1,3 @@
-Here are the 5 "Microsoft-ready" bullet points for your Wordle PvP project. These use the specific metrics and "cool terms" we discussed to show you aren't just a coder, but a Systems Engineer.
 
 Scalable Distributed Architecture: Architected a horizontally scalable backend using the Node.js Cluster module to distribute traffic across multiple CPU cores, simulating a production-grade environment capable of supporting 1M+ theoretical concurrent users.
 

@@ -2,104 +2,153 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Login({ setUser }) {
-  const [isLogin, setIsLogin] = useState(true); // Toggle between Login and Signup
-  const [formData, setFormData] = useState({ identifier: "", username: "", email: "", password: "" });
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    identifier: "",
+    username: "",
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     const endpoint = isLogin ? "/api/login" : "/api/register";
-    const payload = isLogin 
+    const payload = isLogin
       ? { identifier: formData.identifier, password: formData.password }
-      : { username: formData.username, email: formData.email, password: formData.password };
+      : {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        };
 
     try {
       const response = await fetch(`http://localhost:5000${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        credentials: "include", // Required to send/receive JWT cookies
+        credentials: "include",
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setUser(data.user); // Update global app state
+        setUser(data.user);
         navigate("/dashboard");
       } else {
         setError(data.message || "Authentication failed");
       }
     } catch (err) {
-      setError("Terminal connection failed. Is the backend running?");
+      setError("Unable to reach the server right now. Make sure the backend is running.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a1b] flex items-center justify-center p-6 font-sans relative overflow-hidden">
-      {/* Background Aesthetic */}
-      <div className="absolute w-[500px] h-[500px] bg-[#6aaa64]/10 rounded-full blur-[120px] animate-pulse" />
+    <div className="relative min-h-screen overflow-hidden bg-[#121213] px-6 py-12 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(76,175,80,0.08),transparent_26%)]" />
 
-      <div className="relative z-10 w-full max-w-md backdrop-blur-xl bg-white/[0.05] border border-white/10 rounded-[2.5rem] p-10 shadow-2xl">
-        <div className="text-center mb-10">
-          <h2 className="text-xs font-black tracking-[0.5em] text-[#6aaa64] uppercase mb-2">
-            {isLogin ? "Access_Protocol" : "New_Identity_Sync"}
-          </h2>
-          <h1 className="text-4xl font-bold italic uppercase tracking-tighter text-white">
-            {isLogin ? "Elite_Login" : "Register_Elite"}
-          </h1>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-[10px] font-bold p-3 rounded-lg text-center uppercase tracking-widest">
-              Error: {error}
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl items-center justify-center">
+        <div className="grid w-full max-w-4xl gap-8 rounded-[2rem] border border-white/8 bg-[#1e1f22] p-4 shadow-[0_20px_48px_rgba(0,0,0,0.28)] md:grid-cols-[1.05fr_0.95fr] md:p-5">
+          <div className="hidden rounded-[1.5rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 md:flex md:flex-col md:justify-between">
+            <div>
+              <div className="inline-flex rounded-full border border-[#4CAF50]/30 bg-[#4CAF50]/10 px-3 py-1 text-sm font-medium text-[#4CAF50]">
+                Wordle PvP
+              </div>
+              <h2 className="mt-6 text-4xl font-bold tracking-tight">
+                {isLogin ? "Welcome back" : "Create your account"}
+              </h2>
+              <p className="mt-4 max-w-sm text-base leading-7 text-gray-400">
+                {isLogin
+                  ? "Sign in to create multiplayer rooms, join games by code, and keep your progress together."
+                  : "Set up your account to unlock multiplayer matches and persistent progress."}
+              </p>
             </div>
-          )}
 
-          {!isLogin && (
-            <input
-              type="text"
-              placeholder="USERNAME"
-              className="w-full bg-black/30 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-zinc-600 focus:border-[#6aaa64]/50 outline-none transition-all font-bold"
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
-            />
-          )}
+            <div className="rounded-2xl border border-white/8 bg-black/15 p-5 text-sm leading-6 text-gray-400">
+              Clean, dark, and focused on play. No clutter, just fast access to your next game.
+            </div>
+          </div>
 
-          <input
-            type={isLogin ? "text" : "email"}
-            placeholder={isLogin ? "USERNAME OR EMAIL" : "EMAIL_ADDRESS"}
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-zinc-600 focus:border-[#6aaa64]/50 outline-none transition-all font-bold"
-            onChange={(e) => setFormData({ ...isLogin ? { ...formData, identifier: e.target.value } : { ...formData, email: e.target.value } })}
-            required
-          />
+          <div className="rounded-[1.5rem] bg-[#17181a] p-7 sm:p-9">
+            <div className="mb-8">
+              <p className="text-sm font-medium text-[#4CAF50]">
+                {isLogin ? "Login" : "Register"}
+              </p>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                {isLogin ? "Sign in to play" : "Create an account"}
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-gray-400">
+                {isLogin
+                  ? "Use your username or email to continue."
+                  : "Fill in a few details and you’ll be ready to play."}
+              </p>
+            </div>
 
-          <input
-            type="password"
-            placeholder="PASSWORD"
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-zinc-600 focus:border-[#6aaa64]/50 outline-none transition-all font-bold"
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-          />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+                  {error}
+                </div>
+              )}
 
-          <button
-            type="submit"
-            className="w-full py-4 bg-[#6aaa64] hover:bg-[#5f995a] text-black font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_20px_rgba(106,170,100,0.3)] active:scale-95"
-          >
-            {isLogin ? "Initialize_Session" : "Finalize_Registration"}
-          </button>
-        </form>
+              {!isLogin && (
+                <input
+                  type="text"
+                  placeholder="Username"
+                  className="w-full rounded-xl border border-white/10 bg-[#222327] px-4 py-3.5 text-white placeholder:text-gray-500 outline-none transition-all duration-200 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                  onChange={(e) =>
+                    setFormData({ ...formData, username: e.target.value })
+                  }
+                  required
+                />
+              )}
 
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-widest transition-colors"
-          >
-            {isLogin ? "Need a new account? Register_Here" : "Already have access? Login_Here"}
-          </button>
+              <input
+                type={isLogin ? "text" : "email"}
+                placeholder={isLogin ? "Username or email" : "Email address"}
+                className="w-full rounded-xl border border-white/10 bg-[#222327] px-4 py-3.5 text-white placeholder:text-gray-500 outline-none transition-all duration-200 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                onChange={(e) =>
+                  setFormData(
+                    isLogin
+                      ? { ...formData, identifier: e.target.value }
+                      : { ...formData, email: e.target.value },
+                  )
+                }
+                required
+              />
+
+              <input
+                type="password"
+                placeholder="Password"
+                className="w-full rounded-xl border border-white/10 bg-[#222327] px-4 py-3.5 text-white placeholder:text-gray-500 outline-none transition-all duration-200 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                required
+              />
+
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-[#4CAF50] px-4 py-3.5 text-base font-semibold text-black transition-all duration-200 hover:scale-[1.01] hover:brightness-110 active:scale-[0.99]"
+              >
+                {isLogin ? "Continue" : "Create account"}
+              </button>
+            </form>
+
+            <div className="mt-7 text-center">
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm font-medium text-gray-400 transition-colors hover:text-white"
+              >
+                {isLogin
+                  ? "Need an account? Register"
+                  : "Already have an account? Login"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

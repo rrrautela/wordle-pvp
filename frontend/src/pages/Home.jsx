@@ -3,17 +3,21 @@ import { Link } from "react-router-dom";
 function GameCard({ to, theme, label, title, desc, cta, isNew }) {
   const themes = {
     green: {
-      text: "text-[#6aaa64]",
-      border: "hover:border-[#6aaa64]/40",
-      badge: "bg-[#6aaa64]/20 border-[#6aaa64]/50 text-[#6aaa64]",
-      hoverText: "group-hover:text-[#6aaa64]"
+      text: "text-[#4CAF50]",
+      border: "hover:border-[#4CAF50]/50",
+      badge: "bg-[#4CAF50]/15 border-[#4CAF50]/35 text-[#4CAF50]",
+      hoverText: "group-hover:text-[#4CAF50]",
+      iconBg: "bg-[#4CAF50]/15",
+      icon: "S",
     },
-    red: {
-      text: "text-red-500",
-      border: "hover:border-red-500/40",
-      badge: "bg-red-500/20 border-red-500/50 text-red-500",
-      hoverText: "group-hover:text-red-500"
-    }
+    blue: {
+      text: "text-[#3b82f6]",
+      border: "hover:border-[#3b82f6]/50",
+      badge: "bg-[#3b82f6]/15 border-[#3b82f6]/35 text-[#3b82f6]",
+      hoverText: "group-hover:text-[#3b82f6]",
+      iconBg: "bg-[#3b82f6]/15",
+      icon: "M",
+    },
   };
 
   const style = themes[theme];
@@ -21,27 +25,36 @@ function GameCard({ to, theme, label, title, desc, cta, isNew }) {
   return (
     <Link
       to={to}
-      className={`group relative flex-1 overflow-hidden backdrop-blur-xl bg-white/[0.02] border border-white/5 p-10 rounded-[2.5rem] transition-all duration-500 hover:-translate-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${style.border}`}
+      className={`group relative flex-1 overflow-hidden rounded-[2rem] border border-white/8 bg-[#1e1f22] p-8 shadow-[0_16px_36px_rgba(0,0,0,0.28)] transition-all duration-200 hover:scale-105 hover:shadow-[0_22px_42px_rgba(0,0,0,0.34)] ${style.border}`}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
       {isNew && (
-        <div className={`absolute top-6 right-6 ${style.badge} text-[8px] px-2 py-1 rounded-full font-black tracking-widest animate-pulse`}>
-          NEW MODE
+        <div
+          className={`absolute right-6 top-6 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${style.badge}`}
+        >
+          New
         </div>
       )}
 
       <div className="relative z-10 text-left">
-        <span className={`text-[10px] ${style.text} font-black uppercase tracking-widest`}>
-          {label}
-        </span>
-        <h2 className={`text-3xl font-bold mt-2 ${style.hoverText} transition-colors uppercase italic`}>
+        <div
+          className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold ${style.iconBg} ${style.text}`}
+        >
+          {style.icon}
+        </div>
+        <span className={`text-sm font-medium ${style.text}`}>{label}</span>
+        <h2
+          className={`mt-2 text-3xl font-bold ${style.hoverText} transition-colors`}
+        >
           {title}
         </h2>
-        <p className="text-zinc-400 text-sm mt-4 leading-relaxed">{desc}</p>
-        <div className="mt-10 flex items-center text-xs font-bold text-white/40 group-hover:text-white transition-colors">
+        <p className="mt-4 text-sm leading-6 text-gray-400">{desc}</p>
+        <div className="mt-8 flex items-center text-sm font-semibold text-white/75 transition-colors group-hover:text-white">
           {cta}
-          <span className="ml-2 group-hover:translate-x-3 transition-transform">→</span>
+          <span className="ml-2 transition-transform group-hover:translate-x-1.5">
+            →
+          </span>
         </div>
       </div>
     </Link>
@@ -52,46 +65,49 @@ export default function Home({ user }) {
   const isGuest = user?.guest;
 
   return (
-    <div className="min-h-screen bg-[#1a1a1b] text-white flex flex-col justify-center p-8 lg:p-24 font-sans overflow-hidden relative">
-      
-      {/* Background Ambient Glows */}
-      <div className="absolute w-[600px] h-[600px] bg-[#6aaa64]/5 rounded-full blur-[130px] -top-20 -left-20" />
-      <div className="absolute w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[130px] -bottom-20 -right-20" />
+    <div className="relative min-h-screen overflow-hidden bg-[#121213] px-6 py-24 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(76,175,80,0.07),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.07),transparent_24%)]" />
 
-      {/* Hero Welcome Section */}
-      <div className="relative z-10 max-w-5xl mx-auto w-full mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-         <h1 className="text-4xl font-black italic uppercase tracking-tighter">
-            Welcome, {user?.username?.split('_')[0] || "Operator"}
-         </h1>
-         <p className="text-zinc-500 font-mono text-[10px] mt-2 tracking-[0.3em] uppercase">
-            Select_Operational_Module // Status: Online
-         </p>
-      </div>
+      <div className="relative z-10 mx-auto max-w-5xl">
+        <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <p className="text-sm font-medium text-gray-400">
+            Welcome back, {user?.username?.split("_")[0] || "Player"}
+          </p>
+          <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
+            Choose a mode
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">Singleplayer or multiplayer.</p>
+        </div>
 
-      {/* Cards Layout */}
-      <div className="relative z-10 flex flex-col sm:flex-row gap-8 max-w-5xl mx-auto w-full">
-         <GameCard 
-           to="/single" 
-           theme="green" 
-           label="Solo_Training" 
-           title="Singleplayer" 
-           desc={isGuest ? "Classic offline grid access. Local decryption only." : "Earn 50+ coins per victory. Data syncs to Elite servers."}
-           cta="INITIALIZE" 
-         />
-         <GameCard 
-           to="/multi" 
-           theme="red" 
-           label="PvP_Protocol" 
-           title="Multiplayer" 
-           desc="Real-time tactical engagement. Compete for high-stakes rewards." 
-           cta="ENCRYPTED" 
-           isNew 
-         />
-      </div>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <GameCard
+            to="/single"
+            theme="green"
+            label="Solo practice"
+            title="Singleplayer"
+            desc={
+              isGuest
+                ? "Classic offline play."
+                : "Play at your own pace."
+            }
+            cta="Play now"
+          />
+          <GameCard
+            to="/multi"
+            theme="blue"
+            label="Play with a friend"
+            title="Multiplayer"
+            desc="Create a room and play live."
+            cta="Open lobby"
+            isNew
+          />
+        </div>
 
-      {/* Bottom Status Branding */}
-      <div className="mt-20 text-center text-zinc-800 font-mono text-[8px] uppercase tracking-[1.5em] opacity-50">
-        System_Load_Optimal // Auth: {isGuest ? "Guest_Tier" : "Elite_Tier"}
+        <div className="mt-10 rounded-3xl border border-white/8 bg-[#1e1f22] px-6 py-5 text-sm text-gray-400 shadow-[0_12px_30px_rgba(0,0,0,0.22)]">
+          {isGuest
+            ? "Log in for multiplayer."
+            : "Ready to play."}
+        </div>
       </div>
     </div>
   );

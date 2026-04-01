@@ -15,10 +15,10 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
   }
 
   return (
-    <div className="mt-15 sm:mt-10 h-full w-full max-w-full overflow-x-hidden">
+    <div className="h-full w-full max-w-full overflow-x-hidden">
 
       {/* ================= FIRST ROW (Q → P) ================= */}
-      <div className="flex justify-evenly">
+      <div className="flex justify-center gap-[4px]">
         {
           // Take first 10 keys and render them
           keyboard_keys.slice(0, 10).map((keyboard_key, idx) => (
@@ -30,7 +30,7 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
                 ref={(el) => (keyboardKeysRefs.current[idx] = el)}
 
                 // Tailwind styles: fixed size, bold text, gray background
-                className="h-12 mr-0.5 sm:h-14 w-[9vw] sm:w-[44px] min-w-[28px] text-zinc-200 text-xl font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
+                className="h-[52px] w-[40px] text-zinc-200 text-lg font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
 
                 // When clicked, send this key back to parent logic
                 onClick={() => keyPressed(keyboard_key)}
@@ -45,7 +45,7 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
       </div>
 
       {/* ================= SECOND ROW (A → L) ================= */}
-      <div className="flex justify-evenly mt-2 ml-5 mr-5">
+      <div className="mt-2 flex justify-center gap-[4px]">
 
         {/* slice(10,19) grabs middle keyboard row */}
         {keyboard_keys.slice(10, 19).map((keyboard_key, idx) => (
@@ -56,7 +56,7 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
               // This keeps ref index aligned with original keyboard_keys array
               ref={(el) => (keyboardKeysRefs.current[idx + 10] = el)}
 
-              className="h-12 sm:h-14 w-[9vw] sm:w-[44px] min-w-[28px] text-zinc-200 text-xl font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
+              className="h-[52px] w-[40px] text-zinc-200 text-lg font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
 
               onClick={() => keyPressed(keyboard_key)}
             >
@@ -68,7 +68,7 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
       </div>
 
       {/* ================= THIRD ROW (Enter → Backspace) ================= */}
-      <div className="flex justify-evenly mt-2">
+      <div className="mt-2 flex justify-center gap-[4px]">
 
         {/* Remaining keys: includes Enter + letters + Backspace */}
         {keyboard_keys.slice(19).map((keyboard_key, idx) => (
@@ -83,8 +83,9 @@ function KeyBoard({ keyPressed, keyboardKeysRefs, keyboard_keys }) {
               className={
                 // First and last buttons are Enter + Backspace
                 // They are wider than normal letters
-                idx === 8? "h-12 sm:h-14 w-[15vw] sm:w-[80px] min-w-[28px] text-zinc-200 text-md font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
-                  : "h-12 sm:h-14 w-[9vw] sm:w-[44px] min-w-[28px] text-zinc-200 text-xl font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
+                idx === 8
+                  ? "h-[52px] w-[64px] text-zinc-200 text-sm font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
+                  : "h-[52px] w-[40px] text-zinc-200 text-lg font-bold bg-neutral-500 border border-gray-700 rounded focus:outline-none"
               } 
             >
               {keyboard_key}

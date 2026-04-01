@@ -26,6 +26,25 @@
   animation: bounce-vertical 0.4s ease-in-out;
 }
 
+@keyframes loading-dots {
+  0%,
+  20% {
+    content: ".";
+  }
+  40% {
+    content: "..";
+  }
+  60%,
+  100% {
+    content: "...";
+  }
+}
+
+.loading-dots::after {
+  content: ".";
+  animation: loading-dots 1.2s steps(1, end) infinite;
+}
+
 
 
 /* Apply to your boxes */

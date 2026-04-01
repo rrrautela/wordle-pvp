@@ -20,8 +20,6 @@ import {
   getThePlayer,
   getTheOpponent,
 } from "./gameManager.js";
-import { userInfo } from "os";
-import MultiPlayer from "./../frontend/src/pages/MultiPlayer";
 
 // -------------------- Validation Regex --------------------
 
@@ -65,7 +63,7 @@ app.get("/api/protected", verifyToken, (req, res) => {
 app.get("/api/me", verifyToken, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT username, email, coins FROM users WHERE id = $1",
+      "SELECT id, username, email, coins FROM users WHERE id = $1",
       [req.user.userID],
     );
     res.json(result.rows[0]);
@@ -179,7 +177,7 @@ app.post("/api/login", async (req, res) => {
       .cookie("token", token, {
         httpOnly: true, // JS cannot access cookie (prevents XSS)
         secure: false, // allow HTTP (use true in production HTTPS)
-        sameSite: "lax", // basic CSRF protection
+        sameSite: "lax", // works reliably for localhost frontend/backend during dev
         maxAge: 3600 * 1000, // 1 hour in milliseconds
       })
 
@@ -304,6 +302,8 @@ io.on("connection", (socket) => {
   const code = userGameMap.get(socket.userId); // Check if this user already belongs to a game
 
   if (code) {
+    //user belongs to a game, so treat this connection as a reconnection attempt
+
     const game = games.get(code); // Fetch the game object using the stored game code
     if (!game) return; // Exit if the game no longer exists
 
@@ -324,9 +324,34 @@ io.on("connection", (socket) => {
       clearTimeout(player.reconnectTimer);
       player.reconnectTimer = null;
     }
+
+    // send full game state to ONLY this reconnected player
+    socket.emit("sync-state", {
+      gameCode: code,
+      status: game.status,
+      winner: game.winner || null,
+      players: {
+        host: {
+          userId: game.players.host.userId,
+          guesses: game.players.host.guesses,
+          hasWon: game.players.host.hasWon,
+        },
+        opponent: game.players.opponent
+          ? {
+              userId: game.players.opponent.userId,
+              guesses: game.players.opponent.guesses,
+              hasWon: game.players.opponent.hasWon,
+            }
+          : null,
+      },
+    });
   } else {
     console.log("user not in a game rn"); // User is not reconnecting to an existing game
   }
+
+  //as user is not recojnecting then it means its a new connection,
+  // so we wait for them to create or join a game,
+  // and we handle that in the respective event handlers below
 
   // Event handler for initiating a new game session
   socket.on("create-game", () => {
@@ -335,19 +360,26 @@ io.on("connection", (socket) => {
     if (result.success) {
       // Successfully created game; join the specific room code
       socket.join(result.code); //join room
+      socket.emit("game-created", result.code); //send code back to creator
     } else {
       // Notify client of failure to create game (e.g., already in a game)
       socket.emit("error", result.error);
     }
   });
 
+  
   socket.on("join-game", (code) => {
+    console.log("JOIN ATTEMPT:", code, "USER:", socket.userId);
+
     const result = joinGame(code, socket.userId, socket.id);
+
+    console.log("JOIN RESULT:", result);
 
     if (result.success) {
       socket.join(code);
-
       io.to(code).emit("game-started");
+    } else {
+      socket.emit("error", result.error);
     }
   });
 
@@ -355,14 +387,19 @@ io.on("connection", (socket) => {
     const response = handleGuess(socket.userId, word);
     if (!response) return; //neecsary, in case handlegess returns null
 
-    const { result, code, guess } = response;
+    const { code, result } = response;
 
     if (result) {
-      io.to(code).emit("guess-result", {
-        playerId: socket.userId,
-        guess,
-        result,
-      });
+      io.to(code).emit("guess-result", result);
+
+      // if game finished → notify both players
+      const game = games.get(code);
+
+      if (game?.status === "finished") {
+        io.to(code).emit("game-ended", {
+          winner: game.winner,
+        });
+      }
     }
   });
 
@@ -420,9 +457,3 @@ io.on("connection", (socket) => {
 server.listen(5000, () => {
   console.log("Server running on port 5000");
 });
-
-// 1.  Letting the other player continue after someone wins
-// 2, prevent multiple winnners
-
-// 3. wdykm by One more backend improvement you should add soon
-// Right now guesses are unlimited if someone keeps guessing after game., ??? mhy main engine always checks that already i think?

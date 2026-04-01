@@ -3,6 +3,9 @@ import GameWindow from "../components/GameWindow";
 import IntroductionWindow from "../components/IntroductionWindow";
 import "../App.css";
 import { createGameEngine } from './../../../shared/gameEngine';
+import data from "../../../shared/data/all5letterwords.json";
+
+
 
 /**
  * SinglePlayer Page Component
@@ -58,7 +61,7 @@ function SinglePlayer({ user, setUser }) {
     }
   };
 
-  const engine = createGameEngine();
+  const engine = createGameEngine(data);
   return (
     <>
       {/* key={count}: Forces a hard reset of GameWindow and the internal engine.
@@ -70,9 +73,6 @@ function SinglePlayer({ user, setUser }) {
         onGameOver={handleGameOver} 
         gameController = {engine}
       />
-
-      
-
 
       {/* Intro Overlay shown only on initial load */}
       {showIntro && <IntroductionWindow onClose={closeIntro} />}
