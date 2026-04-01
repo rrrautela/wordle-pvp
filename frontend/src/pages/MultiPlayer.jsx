@@ -25,6 +25,7 @@ export default function MultiPlayer({ user }) {
       : error;
 
   useEffect(() => {
+    console.log("Connecting socket to:", BACKEND_URL);
     socketRef.current = io(BACKEND_URL, {
       withCredentials: true,
       transports: ["websocket"],

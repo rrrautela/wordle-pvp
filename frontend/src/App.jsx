@@ -18,7 +18,9 @@ function App() {
     // Inside App.jsx -> useEffect
     async function checkAuth() {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/me`, {
+        const apiUrl = `${BACKEND_URL}/api/me`;
+        console.log("API CALL:", apiUrl);
+        const res = await fetch(apiUrl, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -44,7 +46,9 @@ function App() {
   // --- LOGOUT: Terminate Server and Local Session ---
   const handleLogout = async () => {
     try {
-      await fetch(`${BACKEND_URL}/api/logout`, {
+      const apiUrl = `${BACKEND_URL}/api/logout`;
+      console.log("API CALL:", apiUrl);
+      await fetch(apiUrl, {
         method: "POST",
         credentials: "include",
       });

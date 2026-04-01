@@ -1,1 +1,3 @@
-export const BACKEND_URL = "https://wordle-pvp-backend.onrender.com";
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+console.log("BACKEND_URL:", BACKEND_URL);

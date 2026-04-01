@@ -17,7 +17,9 @@ export default function Login({ setUser }) {
     e.preventDefault();
     setError("");
 
-    const endpoint = isLogin ? "/api/login" : "/api/register";
+    const apiUrl = isLogin
+      ? `${BACKEND_URL}/api/login`
+      : `${BACKEND_URL}/api/register`;
     const payload = isLogin
       ? { identifier: formData.identifier, password: formData.password }
       : {
@@ -27,7 +29,8 @@ export default function Login({ setUser }) {
         };
 
     try {
-      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      console.log("API CALL:", apiUrl);
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -32,7 +32,9 @@ function SinglePlayer({ user, setUser }) {
       console.log(`Mission Success: ${user.username}. Syncing result for ${guessCount} attempts...`);
 
       try {
-        const response = await fetch(`${BACKEND_URL}/api/update-coins`, {
+        const apiUrl = `${BACKEND_URL}/api/update-coins`;
+        console.log("API CALL:", apiUrl);
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
