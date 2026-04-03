@@ -45,6 +45,26 @@
   animation: loading-dots 1.2s steps(1, end) infinite;
 }
 
+@keyframes loading-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-loading-shell {
+  animation: loading-fade-in 0.35s ease-out;
+}
+
+.keyboard-shell,
+.keyboard-shell * {
+  box-sizing: border-box;
+}
+
 
 
 /* Apply to your boxes */

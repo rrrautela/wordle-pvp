@@ -69,9 +69,16 @@ function App() {
 
   if (loading)
     return (
-      <div className="h-screen w-screen bg-[#1a1a1b] flex items-center justify-center">
-        <div className="text-[#6aaa64] font-mono text-[10px] animate-pulse tracking-[1em]">
-          INITIALIZING_PROTOCOL...
+      <div className="app-loading-shell flex h-screen w-screen items-center justify-center bg-[#121213] px-6">
+        <div className="w-full max-w-sm rounded-[1.75rem] border border-white/8 bg-[#1e1f22] px-6 py-8 text-center shadow-[0_20px_48px_rgba(0,0,0,0.28)]">
+          <div className="mx-auto mb-5 h-11 w-11 animate-spin rounded-full border-4 border-white/10 border-t-[#4CAF50]" />
+          <h1 className="text-xl font-semibold tracking-tight text-white">
+            Connecting to server...
+          </h1>
+          <p className="mt-2 text-sm text-gray-400">Waking things up...</p>
+          <p className="mt-4 text-xs leading-6 text-gray-500">
+            This may take a few seconds on first load
+          </p>
         </div>
       </div>
     );
