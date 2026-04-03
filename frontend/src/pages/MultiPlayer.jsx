@@ -74,7 +74,6 @@ export default function MultiPlayer({ user }) {
     console.log("Connecting socket to:", BACKEND_URL);
     socketRef.current = io(BACKEND_URL, {
       withCredentials: true,
-      transports: ["websocket"],
     });
 
     const socket = socketRef.current;

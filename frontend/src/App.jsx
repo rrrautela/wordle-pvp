@@ -13,37 +13,54 @@ function App() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  async function checkAuthState() {
+    try {
+      if (!BACKEND_URL) {
+        console.error("BACKEND_URL is undefined!");
+      }
+      const apiUrl = `${BACKEND_URL}/api/me`;
+      console.log("API CALL:", apiUrl);
+      const res = await fetch(apiUrl, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+      } else {
+        const savedGuest = localStorage.getItem("wordle_guest");
+        setUser(savedGuest ? JSON.parse(savedGuest) : null);
+      }
+    } catch (err) {
+      console.error("Auth_Protocol_Offline:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // --- AUTH CHECK: Sync session with Backend on Load ---
   useEffect(() => {
-    // Inside App.jsx -> useEffect
-    async function checkAuth() {
-      try {
-        if (!BACKEND_URL) {
-          console.error("BACKEND_URL is undefined!");
-        }
-        const apiUrl = `${BACKEND_URL}/api/me`;
-        console.log("API CALL:", apiUrl);
-        const res = await fetch(apiUrl, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
+    checkAuthState();
 
-        if (res.ok) {
-          const userData = await res.json();
-          // Ensure userData contains { username, coins, ... }
-          setUser(userData);
-        } else {
-          const savedGuest = localStorage.getItem("wordle_guest");
-          if (savedGuest) setUser(JSON.parse(savedGuest));
-        }
-      } catch (err) {
-        console.error("Auth_Protocol_Offline:", err);
-      } finally {
-        setLoading(false);
+    function handleWindowFocus() {
+      checkAuthState();
+    }
+
+    function handleStorage(event) {
+      if (event.key === "wordle_auth_changed") {
+        checkAuthState();
       }
     }
-    checkAuth();
+
+    window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   // --- LOGOUT: Terminate Server and Local Session ---
@@ -61,6 +78,7 @@ function App() {
     } catch (err) {
       console.error("Logout_Error:", err);
     } finally {
+      localStorage.setItem("wordle_auth_changed", String(Date.now()));
       setUser(null);
       localStorage.removeItem("wordle_guest");
       navigate("/");

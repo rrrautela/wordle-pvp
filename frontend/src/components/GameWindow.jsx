@@ -41,6 +41,7 @@ export default function GameWindow({
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [letterStates, setLetterStates] = useState({});
 
   const [opponentRows, setOpponentRows] = useState(
     Array(6)
@@ -125,6 +126,31 @@ export default function GameWindow({
     if (showNotice) {
       setReconnectNotice("Opponent reconnected");
     }
+  }
+
+  function mapColorToLetterState(colorClass) {
+    if (colorClass === "bg-green-800") return "correct";
+    if (colorClass === "bg-yellow-600") return "present";
+    if (colorClass === "bg-zinc-700") return "absent";
+    return null;
+  }
+
+  function promoteLetterState(letter, nextState) {
+    if (!letter || !nextState) return;
+
+    const priority = { absent: 1, present: 2, correct: 3 };
+
+    setLetterStates((prev) => {
+      const current = prev[letter];
+      if ((priority[current] || 0) >= priority[nextState]) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [letter]: nextState,
+      };
+    });
   }
 
   useEffect(() => {
@@ -239,6 +265,7 @@ export default function GameWindow({
 
   useEffect(() => {
     resetOpponentReconnectState(false);
+    setLetterStates({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameCode]);
 
@@ -328,16 +355,8 @@ export default function GameWindow({
         : [];
       for (let i = 0; i < 5; i++) {
         const letter = guess[i];
-        const keyIndex = keyboard_keys.indexOf(letter);
-        const keyElement = keyboardKeysRefs.current[keyIndex];
-        if (!keyElement || !letterResults[i]) continue;
-
-        if (!keyElement.classList.contains("bg-green-800")) {
-          keyElement.classList.forEach(
-            (cls) => cls.startsWith("bg-") && keyElement.classList.remove(cls),
-          );
-          keyElement.classList.add(letterResults[i]);
-        }
+        const nextState = mapColorToLetterState(letterResults[i]);
+        promoteLetterState(letter, nextState);
       }
     });
 
@@ -484,18 +503,8 @@ export default function GameWindow({
     setTimeout(() => {
       for (let i = 0; i < 5; i++) {
         const letter = guessWord[i];
-        const keyIndex = keyboard_keys.indexOf(letter);
-        const keyElement = keyboardKeysRefs.current[keyIndex];
-        if (!keyElement) continue;
-
-        if (!keyElement.classList.contains("bg-green-800")) {
-          keyElement.classList.forEach(
-            (cls) => cls.startsWith("bg-") && keyElement.classList.remove(cls),
-          );
-          if (letterResults[i]) {
-            keyElement.classList.add(letterResults[i]);
-          }
-        }
+        const nextState = mapColorToLetterState(letterResults[i]);
+        promoteLetterState(letter, nextState);
       }
 
       if (result.status === "correct") {
@@ -818,6 +827,7 @@ export default function GameWindow({
               keyPressed={keyPressed}
               keyboard_keys={keyboard_keys}
               keyboardKeysRefs={keyboardKeysRefs}
+              letterStates={letterStates}
             />
           </div>
         </div>

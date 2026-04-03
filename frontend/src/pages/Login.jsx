@@ -48,6 +48,7 @@ export default function Login({ setUser }) {
       }
 
       if (response.ok) {
+        localStorage.setItem("wordle_auth_changed", String(Date.now()));
         setUser(data.user);
         navigate("/dashboard");
       } else {
