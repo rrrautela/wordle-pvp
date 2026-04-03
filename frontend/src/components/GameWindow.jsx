@@ -136,19 +136,20 @@ export default function GameWindow({
   }
 
   function promoteLetterState(letter, nextState) {
-    if (!letter || !nextState) return;
+    const normalizedLetter = letter?.toUpperCase();
+    if (!normalizedLetter || !nextState) return;
 
     const priority = { absent: 1, present: 2, correct: 3 };
 
     setLetterStates((prev) => {
-      const current = prev[letter];
+      const current = prev[normalizedLetter];
       if ((priority[current] || 0) >= priority[nextState]) {
         return prev;
       }
 
       return {
         ...prev,
-        [letter]: nextState,
+        [normalizedLetter]: nextState,
       };
     });
   }
@@ -411,7 +412,7 @@ export default function GameWindow({
     const letterResults = Array.isArray(result?.letterResults)
       ? result.letterResults
       : [];
-    const guessWord = result?.guess || "";
+    const guessWord = (result?.guess || wordInputSoFarRef.current || "").toUpperCase();
     const guessNumber = Number.isFinite(result?.guessNumber)
       ? result.guessNumber
       : 1;
