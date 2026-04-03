@@ -449,6 +449,7 @@ io.on("connection", (socket) => {
       if (game?.status === "finished") {
         io.to(code).emit("game-ended", {
           winner: game.winner,
+          correctWord: game.correctWord,
         });
       }
     }

@@ -42,6 +42,9 @@ export default function GameWindow({
   const [isMobile, setIsMobile] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [letterStates, setLetterStates] = useState({});
+  const [gameResult, setGameResult] = useState(null);
+  const [showLoserPrompt, setShowLoserPrompt] = useState(false);
+  const [showLoserWord, setShowLoserWord] = useState(false);
 
   const [opponentRows, setOpponentRows] = useState(
     Array(6)
@@ -255,18 +258,42 @@ export default function GameWindow({
       resetOpponentReconnectState(false);
     });
 
+    socket.on("game-ended", (payload) => {
+      if (!payload) return;
+
+      if (payload.winner === user?.id) {
+        setGameResult({
+          status: "win",
+          word: payload.correctWord || null,
+        });
+        return;
+      }
+
+      setGameResult({
+        status: "lose",
+        word: payload.correctWord || null,
+      });
+      setShowLoserPrompt(true);
+      setShowLoserWord(false);
+      ischeckOngoingRightNowRef.current = false;
+    });
+
     return () => {
       socket.off("guess-result");
       socket.off("opponent_disconnected");
       socket.off("sync-state");
       socket.off("game-started");
+      socket.off("game-ended");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, user?.id]);
 
   useEffect(() => {
     resetOpponentReconnectState(false);
     setLetterStates({});
+    setGameResult(null);
+    setShowLoserPrompt(false);
+    setShowLoserWord(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameCode]);
 
@@ -653,13 +680,14 @@ export default function GameWindow({
         >
           <div className="mx-auto flex min-h-full w-full max-w-[1120px] flex-col items-center justify-start px-4 pt-15 sm:px-6 sm:pt-8">
             {mode === "multi" && onLeaveGame && (
-              <div className="mb-4 flex w-full justify-end">
+              <div className="mb-4 flex w-full items-start justify-between">
                 <button
                   onClick={onLeaveGame}
                   className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10"
                 >
                   Leave Game
                 </button>
+                <div className="h-11 w-24 shrink-0" aria-hidden="true" />
               </div>
             )}
 
@@ -694,6 +722,50 @@ export default function GameWindow({
                 TARGET IDENTIFIED: {correctWordToShow}
               </div>
             )}
+
+            {mode === "multi" &&
+              gameResult?.status === "lose" &&
+              showLoserPrompt && (
+                <div className="absolute inset-0 z-[115] flex items-center justify-center bg-black/55 px-4">
+                  <div className="w-full max-w-md rounded-[1.75rem] border border-white/10 bg-[#17181a] px-6 py-7 text-center shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
+                    <h2 className="text-3xl font-bold text-white">
+                      You Lose
+                    </h2>
+                    <p className="mt-3 text-sm text-gray-300">
+                      Do you want to know the word?
+                    </p>
+                    <div className="mt-6 flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => {
+                          setShowLoserWord(true);
+                          setShowLoserPrompt(false);
+                        }}
+                        className="inline-flex min-w-[110px] items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:brightness-95"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowLoserPrompt(false);
+                          setShowLoserWord(false);
+                        }}
+                        className="inline-flex min-w-[110px] items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10"
+                      >
+                        No
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            {mode === "multi" &&
+              gameResult?.status === "lose" &&
+              showLoserWord &&
+              gameResult.word && (
+                <div className="absolute left-1/2 top-4 z-[110] -translate-x-1/2 transform rounded bg-white px-4 py-1.5 text-lg font-bold text-black shadow">
+                  TARGET IDENTIFIED: {gameResult.word}
+                </div>
+              )}
 
             {mode === "multi" ? (
               <>
