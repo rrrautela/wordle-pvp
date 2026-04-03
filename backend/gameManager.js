@@ -174,6 +174,17 @@ function handleGuess(userId, guess) {
 
     const engineResult = player.engine.submitGuess(guess);
 
+    if (engineResult.status === "invalid") {
+      return {
+        code,
+        result: {
+          playerId: player.userId,
+          guess,
+          ...engineResult,
+        },
+      };
+    }
+
     player.guesses.push({
       guess,
       result: engineResult,

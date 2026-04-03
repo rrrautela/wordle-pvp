@@ -418,8 +418,20 @@ export default function GameWindow({
       : 1;
 
     if (mode === "multi" && !isMine) {
+      if (
+        result?.status === "invalid" ||
+        guessWord.length !== 5 ||
+        letterResults.length !== 5
+      ) {
+        return;
+      }
+
       const animationDelay = 300;
       const rowIndex = Math.max(0, guessNumber - 1);
+
+      if (rowIndex < 0 || rowIndex > 5) {
+        return;
+      }
 
       if (isOpponentDisconnected) {
         console.log("Opponent reconnected");

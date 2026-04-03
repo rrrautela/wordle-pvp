@@ -436,6 +436,11 @@ io.on("connection", (socket) => {
     const { code, result } = response;
 
     if (result) {
+      if (result.status === "invalid") {
+        socket.emit("guess-result", result);
+        return;
+      }
+
       io.to(code).emit("guess-result", result);
 
       // if game finished → notify both players
