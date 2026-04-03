@@ -15,6 +15,7 @@ export default function MultiPlayer({ user }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [error, setError] = useState("");
   const [syncState, setSyncState] = useState(null);
+  const [matchVersion, setMatchVersion] = useState(1);
   const isGuest = user?.guest || user?.isGuest || user?.username?.startsWith("Guest");
 
   const displayError =
@@ -46,6 +47,7 @@ export default function MultiPlayer({ user }) {
     setInputCode("");
     setGameStarted(false);
     setSyncState(null);
+    setMatchVersion(1);
     setError("");
   }
 
@@ -89,10 +91,12 @@ export default function MultiPlayer({ user }) {
     });
 
     socket.on("sync-state", (data) => {
+      setMatchVersion(data?.matchVersion || 1);
       applySharedRoomState(data, "sync-state");
     });
 
     socket.on("room_state", (data) => {
+      setMatchVersion(data?.matchVersion || 1);
       applySharedRoomState(data, "room_state");
     });
 
@@ -109,6 +113,7 @@ export default function MultiPlayer({ user }) {
       if (data) {
         setSyncState(data);
         setGameCode(data?.gameCode || data?.roomCode || "");
+        setMatchVersion(data?.matchVersion || 1);
       }
       setError("");
       setGameStarted(true);
@@ -148,7 +153,9 @@ export default function MultiPlayer({ user }) {
     if (isGuest) return;
     setMode("create");
     setError("");
-    socketRef.current.emit("create-game");
+    socketRef.current.emit("create-game", {
+      username: user?.username || null,
+    });
   }
 
   function joinGame() {
@@ -174,7 +181,10 @@ export default function MultiPlayer({ user }) {
 
     setInputCode(typedCode);
     setError("");
-    socketRef.current.emit("join-game", typedCode);
+    socketRef.current.emit("join-game", {
+      code: typedCode,
+      username: user?.username || null,
+    });
     setMode("join");
   }
 
@@ -185,6 +195,7 @@ export default function MultiPlayer({ user }) {
   if (gameStarted) {
     return (
       <GameWindow
+        key={`${gameCode || "room"}-${matchVersion}`}
         mode="multi"
         gameController={socketController}
         gameReset={() => handleLeaveGame({ skipConfirm: true })}

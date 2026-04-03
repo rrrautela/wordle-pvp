@@ -59,7 +59,18 @@ function getTheOpponent(game, userId) {
   return null;
 }
 
-function createGame(userId, socketId) {
+function createFreshEngines() {
+  const hostEngine = createGameEngine(dictionary);
+  const correctWord = hostEngine.getCorrectWord();
+
+  return {
+    correctWord,
+    hostEngine,
+    opponentEngine: createGameEngine(dictionary, correctWord),
+  };
+}
+
+function createGame(userId, socketId, username = null) {
   const existingCode = userGameMap.get(userId);
 
   if (existingCode) {
@@ -75,21 +86,21 @@ function createGame(userId, socketId) {
 
   const code = generateGameCode();
 
-  const hostEngine = createGameEngine(dictionary);
-  const correctWord = hostEngine.getCorrectWord();
+  const { hostEngine, opponentEngine, correctWord } = createFreshEngines();
 
   // initialize game state
   games.set(code, {
     code,
     correctWord,
-    isProcessing: false, // concurrency guard for guesses
+    matchVersion: 1,
     engines: {
       host: hostEngine,
-      opponent: createGameEngine(dictionary, correctWord), // opponent gets same word for fairness
+      opponent: opponentEngine, // opponent gets same word for fairness
     },
     players: {
       host: {
         userId,
+        username,
         socketId,
         hasWon: false,
         isProcessing: false,
@@ -112,7 +123,7 @@ function createGame(userId, socketId) {
   return { success: true, code };
 }
 
-function joinGame(code, userId, socketId) {
+function joinGame(code, userId, socketId, username = null) {
   // prevent joining multiple games
   const existingCode = userGameMap.get(userId);
 
@@ -138,6 +149,7 @@ function joinGame(code, userId, socketId) {
   // assign opponent
   game.players.opponent = {
     userId,
+    username,
     socketId,
     hasWon: false,
     isProcessing: false,
@@ -152,6 +164,39 @@ function joinGame(code, userId, socketId) {
   userGameMap.set(userId, code);
 
   return { success: true, game };
+}
+
+function resetGameSession(code) {
+  const game = games.get(code);
+  if (!game || !game.players.host || !game.players.opponent) return null;
+
+  const { hostEngine, opponentEngine, correctWord } = createFreshEngines();
+
+  game.correctWord = correctWord;
+  game.engines.host = hostEngine;
+  game.engines.opponent = opponentEngine;
+  game.status = "active";
+  game.winner = null;
+  game.matchVersion = (game.matchVersion || 1) + 1;
+  game.rematchRequesterId = null;
+
+  game.players.host = {
+    ...game.players.host,
+    hasWon: false,
+    isProcessing: false,
+    guesses: [],
+    engine: hostEngine,
+  };
+
+  game.players.opponent = {
+    ...game.players.opponent,
+    hasWon: false,
+    isProcessing: false,
+    guesses: [],
+    engine: opponentEngine,
+  };
+
+  return game;
 }
 
 function handleGuess(userId, guess) {
@@ -176,9 +221,9 @@ function handleGuess(userId, guess) {
     const engineResult = player.engine.submitGuess(guess);
 
     if (engineResult.status === "invalid") {
-      return {
-        code,
-        result: {
+  return {
+    code,
+    result: {
           playerId: player.userId,
           guess,
           ...engineResult,
@@ -243,6 +288,7 @@ export {
   getTheOpponent,
   createGame,
   joinGame,
+  resetGameSession,
   handleGuess,
   endGame,
 };

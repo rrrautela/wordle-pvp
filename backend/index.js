@@ -15,6 +15,7 @@ import {
   userGameMap,
   createGame,
   joinGame,
+  resetGameSession,
   endGame,
   handleGuess,
   getThePlayer,
@@ -261,6 +262,7 @@ function serializePlayer(player) {
 
   return {
     userId: player.userId,
+    username: player.username || null,
     guesses: Array.isArray(player.guesses) ? player.guesses : [],
     hasWon: !!player.hasWon,
   };
@@ -274,6 +276,7 @@ function serializeGameState(game) {
     roomCode: game.code,
     status: game.status,
     winner: game.winner || null,
+    matchVersion: game.matchVersion || 1,
     currentTurnPlayerId: null,
     players: {
       host: serializePlayer(game.players?.host),
@@ -372,7 +375,7 @@ io.on("connection", (socket) => {
   // and we handle that in the respective event handlers below
 
   // Event handler for initiating a new game session
-  socket.on("create-game", () => {
+  socket.on("create-game", (payload = {}) => {
     const existingCode = userGameMap.get(socket.userId);
     const existingGame = existingCode ? games.get(existingCode) : null;
 
@@ -382,7 +385,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const result = createGame(socket.userId, socket.id);
+    const result = createGame(socket.userId, socket.id, payload?.username || null);
 
     if (result.success) {
       // Successfully created game; join the specific room code
@@ -398,7 +401,9 @@ io.on("connection", (socket) => {
   });
 
   
-  socket.on("join-game", (code) => {
+  socket.on("join-game", (payload) => {
+    const code = typeof payload === "string" ? payload : payload?.code;
+    const username = typeof payload === "string" ? null : payload?.username || null;
     console.log("JOIN ATTEMPT:", code, "USER:", socket.userId);
 
     const existingCode = userGameMap.get(socket.userId);
@@ -417,7 +422,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const result = joinGame(code, socket.userId, socket.id);
+    const result = joinGame(code, socket.userId, socket.id, username);
 
     console.log("JOIN RESULT:", result);
 
@@ -452,6 +457,53 @@ io.on("connection", (socket) => {
           correctWord: game.correctWord,
         });
       }
+    }
+  });
+
+  socket.on("play_again_request", () => {
+    const code = userGameMap.get(socket.userId);
+    if (!code) return;
+
+    const game = games.get(code);
+    if (!game || game.status !== "finished") return;
+
+    const player = getThePlayer(game, socket.userId);
+    const opponent = getTheOpponent(game, socket.userId);
+    if (!player || !opponent?.isConnected) return;
+
+    game.rematchRequesterId = socket.userId;
+
+    io.to(opponent.socketId).emit("play_again_request", {
+      fromUserId: socket.userId,
+      fromUsername: player.username || "Opponent",
+    });
+  });
+
+  socket.on("play_again_accept", () => {
+    const code = userGameMap.get(socket.userId);
+    if (!code) return;
+
+    const game = games.get(code);
+    if (!game || game.status !== "finished" || !game.rematchRequesterId) return;
+
+    const resetGame = resetGameSession(code);
+    if (!resetGame) return;
+
+    io.to(code).emit("game-started", serializeGameState(resetGame));
+  });
+
+  socket.on("play_again_reject", () => {
+    const code = userGameMap.get(socket.userId);
+    if (!code) return;
+
+    const game = games.get(code);
+    if (!game || !game.rematchRequesterId) return;
+
+    const requester = getThePlayer(game, game.rematchRequesterId);
+    game.rematchRequesterId = null;
+
+    if (requester?.isConnected) {
+      io.to(requester.socketId).emit("play_again_reject");
     }
   });
 

@@ -45,6 +45,8 @@ export default function GameWindow({
   const [gameResult, setGameResult] = useState(null);
   const [showLoserPrompt, setShowLoserPrompt] = useState(false);
   const [showLoserWord, setShowLoserWord] = useState(false);
+  const [rematchState, setRematchState] = useState(null);
+  const [rematchInviteFrom, setRematchInviteFrom] = useState("");
 
   const [opponentRows, setOpponentRows] = useState(
     Array(6)
@@ -256,6 +258,8 @@ export default function GameWindow({
 
     socket.on("game-started", () => {
       resetOpponentReconnectState(false);
+      setRematchState(null);
+      setRematchInviteFrom("");
     });
 
     socket.on("game-ended", (payload) => {
@@ -266,6 +270,8 @@ export default function GameWindow({
           status: "win",
           word: payload.correctWord || null,
         });
+        setRematchState(null);
+        setRematchInviteFrom("");
         return;
       }
 
@@ -275,7 +281,19 @@ export default function GameWindow({
       });
       setShowLoserPrompt(true);
       setShowLoserWord(false);
+      setRematchState(null);
+      setRematchInviteFrom("");
       ischeckOngoingRightNowRef.current = false;
+    });
+
+    socket.on("play_again_request", (payload) => {
+      setRematchState("received");
+      setRematchInviteFrom(payload?.fromUsername || "Opponent");
+    });
+
+    socket.on("play_again_reject", () => {
+      setRematchState("rejected");
+      setRematchInviteFrom("");
     });
 
     return () => {
@@ -284,6 +302,8 @@ export default function GameWindow({
       socket.off("sync-state");
       socket.off("game-started");
       socket.off("game-ended");
+      socket.off("play_again_request");
+      socket.off("play_again_reject");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, user?.id]);
@@ -294,8 +314,27 @@ export default function GameWindow({
     setGameResult(null);
     setShowLoserPrompt(false);
     setShowLoserWord(false);
+    setRematchState(null);
+    setRematchInviteFrom("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameCode]);
+
+  function requestPlayAgain() {
+    if (mode !== "multi" || !gameResult) return;
+    controllerRef.current?.socket?.emit("play_again_request");
+    setRematchState("requested");
+  }
+
+  function acceptPlayAgain() {
+    controllerRef.current?.socket?.emit("play_again_accept");
+    setRematchState("accepted");
+  }
+
+  function rejectPlayAgain() {
+    controllerRef.current?.socket?.emit("play_again_reject");
+    setRematchState(null);
+    setRematchInviteFrom("");
+  }
 
   useEffect(() => {
     if (
@@ -559,12 +598,20 @@ export default function GameWindow({
           onGameOver("correct", guessNumber);
         }
 
-        setTimeout(() => {
-          setWinMsg(false);
-          setEarnedCoins(0);
-          ischeckOngoingRightNowRef.current = false;
-          gameReset();
-        }, 2500);
+        if (mode === "single") {
+          setTimeout(() => {
+            setWinMsg(false);
+            setEarnedCoins(0);
+            ischeckOngoingRightNowRef.current = false;
+            gameReset();
+          }, 2500);
+        } else {
+          setTimeout(() => {
+            setWinMsg(false);
+            setEarnedCoins(0);
+            ischeckOngoingRightNowRef.current = false;
+          }, 2500);
+        }
         return;
       }
 
@@ -581,10 +628,16 @@ export default function GameWindow({
           onGameOver("lost", 6);
         }
 
-        setTimeout(() => {
-          ischeckOngoingRightNowRef.current = false;
-          gameReset();
-        }, 2500);
+        if (mode === "single") {
+          setTimeout(() => {
+            ischeckOngoingRightNowRef.current = false;
+            gameReset();
+          }, 2500);
+        } else {
+          setTimeout(() => {
+            ischeckOngoingRightNowRef.current = false;
+          }, 2500);
+        }
       }
     }, animationDelay * 5 + 300);
   }
@@ -719,7 +772,7 @@ export default function GameWindow({
 
             {correctWordToShow && (
               <div className="absolute left-1/2 top-4 z-[110] -translate-x-1/2 transform rounded bg-white px-4 py-1.5 text-lg font-bold text-black shadow">
-                TARGET IDENTIFIED: {correctWordToShow}
+                Correct word was: {correctWordToShow}
               </div>
             )}
 
@@ -763,9 +816,58 @@ export default function GameWindow({
               showLoserWord &&
               gameResult.word && (
                 <div className="absolute left-1/2 top-4 z-[110] -translate-x-1/2 transform rounded bg-white px-4 py-1.5 text-lg font-bold text-black shadow">
-                  TARGET IDENTIFIED: {gameResult.word}
+                  Correct word was: {gameResult.word}
                 </div>
               )}
+
+            {mode === "multi" && gameResult && (
+              <div className="absolute inset-x-0 top-24 z-[112] flex justify-center px-4">
+                <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-[#17181a]/95 px-5 py-4 text-center shadow-[0_20px_45px_rgba(0,0,0,0.35)] backdrop-blur">
+                  {rematchState === "received" ? (
+                    <>
+                      <p className="text-sm text-gray-300">
+                        {rematchInviteFrom} invites you to play again
+                      </p>
+                      <div className="mt-4 flex items-center justify-center gap-3">
+                        <button
+                          onClick={acceptPlayAgain}
+                          className="inline-flex min-w-[110px] items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:brightness-95"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={rejectPlayAgain}
+                          className="inline-flex min-w-[110px] items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/10"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {rematchState === "requested" && (
+                        <p className="text-sm text-gray-300">
+                          Play again request sent
+                        </p>
+                      )}
+                      {rematchState === "rejected" && (
+                        <p className="text-sm text-gray-300">
+                          Invite declined
+                        </p>
+                      )}
+                      <div className="mt-3 flex items-center justify-center">
+                        <button
+                          onClick={requestPlayAgain}
+                          className="inline-flex min-w-[140px] items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:brightness-95"
+                        >
+                          Play Again
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {mode === "multi" ? (
               <>
