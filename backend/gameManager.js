@@ -92,6 +92,7 @@ function createGame(userId, socketId) {
         userId,
         socketId,
         hasWon: false,
+        isProcessing: false,
         guesses: [],
         isConnected: true,
         disconnectedTime: null,
@@ -139,6 +140,7 @@ function joinGame(code, userId, socketId) {
     userId,
     socketId,
     hasWon: false,
+    isProcessing: false,
     guesses: [],
     isConnected: true,
     reconnectTimer: null,
@@ -159,9 +161,6 @@ function handleGuess(userId, guess) {
   const game = games.get(code); //find the game this user is in
   if (!game) return;
 
-  if (game.isProcessing) return; // guard against concurrent guesses
-  game.isProcessing = true;
-
   try {
     if (game.status == "waiting") return;
     if (!guess || guess.length !== 5) return;
@@ -169,6 +168,8 @@ function handleGuess(userId, guess) {
     const player = getThePlayer(game, userId);
 
     if (!player) return;
+    if (player.isProcessing) return; // guard only this player's in-flight guess
+    player.isProcessing = true;
 
     if(player.engine.getState().isGameOver) return; // prevent guessing after game over
 
@@ -208,7 +209,10 @@ function handleGuess(userId, guess) {
     };
 
   } finally {
-    game.isProcessing = false;
+    const player = getThePlayer(game, userId);
+    if (player) {
+      player.isProcessing = false;
+    }
   }
 }
 
