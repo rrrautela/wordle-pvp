@@ -499,7 +499,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("guess", (word) => {
+  socket.on("guess", async (word) => {
     const response = handleGuess(socket.userId, word);
     if (!response) return; //neecsary, in case handlegess returns null
 
