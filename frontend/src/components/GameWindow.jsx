@@ -595,7 +595,11 @@ export default function GameWindow({
         bounceAllBoxes();
 
         if (onGameOver) {
-          onGameOver("correct", guessNumber);
+          onGameOver(
+            "correct",
+            guessNumber,
+            controllerRef.current?.getCorrectWord?.() || null,
+          );
         }
 
         if (mode === "single") {
@@ -625,7 +629,7 @@ export default function GameWindow({
         setCorrectWordToShow(result.correctWord);
 
         if (onGameOver) {
-          onGameOver("lost", 6);
+          onGameOver("lost", 6, result.correctWord || null);
         }
 
         if (mode === "single") {

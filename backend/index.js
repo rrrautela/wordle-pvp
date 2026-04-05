@@ -248,6 +248,45 @@ app.post("/api/update-coins", verifyToken, async (req, res) => {
   }
 });
 
+app.post("/api/singleplayer-complete", async (req, res) => {
+  try {
+    const { correctWord, attempts } = req.body;
+
+    if (!correctWord || !attempts) {
+      return res
+        .status(400)
+        .json({ message: "correctWord and attempts are required" });
+    }
+
+    let userId = null;
+    const token = req.cookies?.token;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.userID;
+      } catch {
+        userId = null;
+      }
+    }
+
+    await pool.query(
+      `INSERT INTO singleplayer_games (user_id, correct_word, attempts)
+       VALUES ($1, $2, $3)`,
+      [userId, correctWord, attempts],
+    );
+
+    await pool.query(
+      "UPDATE stats SET total_games = total_games + 1 WHERE id = 1",
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Singleplayer record error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 app.post("/api/logout", (req, res) => {
   res
     .clearCookie("token", {
@@ -303,7 +342,7 @@ async function recordCompletedGame(game) {
 
   try {
     await pool.query(
-      `INSERT INTO games (
+      `INSERT INTO multiplayer_games (
         game_code,
         winner_id,
         loser_id,

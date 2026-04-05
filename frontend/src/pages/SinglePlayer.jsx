@@ -26,15 +26,34 @@ function SinglePlayer({ user, setUser }) {
   const closeIntro = () => setShowIntro(false);
 
   // --- Reward Sync Logic ---
-  const handleGameOver = async (status, guessCount) => {
-    // Only sync if the user is authenticated and not a guest
+  const handleGameOver = async (status, guessCount, correctWord) => {
+    try {
+      if (!BACKEND_URL) {
+        console.error("BACKEND_URL is undefined!");
+      }
+
+      const recordApiUrl = `${BACKEND_URL}/api/singleplayer-complete`;
+      console.log("API CALL:", recordApiUrl);
+      await fetch(recordApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          correctWord,
+          attempts: guessCount,
+        }),
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Singleplayer record failed:", err);
+    }
+
+    // Only sync coins if the user is authenticated and not a guest
     if (status === "correct" && user && !user.guest) {
       console.log(`Mission Success: ${user.username}. Syncing result for ${guessCount} attempts...`);
 
       try {
-        if (!BACKEND_URL) {
-          console.error("BACKEND_URL is undefined!");
-        }
         const apiUrl = `${BACKEND_URL}/api/update-coins`;
         console.log("API CALL:", apiUrl);
         const response = await fetch(apiUrl, {
@@ -42,9 +61,7 @@ function SinglePlayer({ user, setUser }) {
           headers: {
             "Content-Type": "application/json",
           },
-          // Send only the guess count; backend handles the tiered reward math
           body: JSON.stringify({ guessCount }),
-          // Required to send/receive the JWT cookie
           credentials: "include", 
         });
 
@@ -56,7 +73,6 @@ function SinglePlayer({ user, setUser }) {
         }
 
         if (response.ok) {
-          // SUCCESS: Update global state with the ACTUAL balance from the DB
           setUser(prev => ({ ...prev, coins: data.newBalance }));
           console.log("Database Synced. New Balance:", data.newBalance);
         } else {
@@ -65,8 +81,8 @@ function SinglePlayer({ user, setUser }) {
       } catch (err) {
         console.error("Network Error during economy sync:", err);
       }
-    } 
-    
+    }
+
     if (status === "lost") {
       console.log("Mission Failed: Target lost.");
     }
