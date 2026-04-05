@@ -81,7 +81,7 @@ export default function Login({ setUser }) {
             </div>
 
             <div className="rounded-2xl border border-white/8 bg-black/15 p-5 text-sm leading-6 text-gray-400">
-              Clean, dark, and focused on play. No clutter, just fast access to your next game.
+              6 tries. 1 word. Beat your opponent.
             </div>
           </div>
 
