@@ -85,6 +85,7 @@ app.get("/api/stats", async (req, res) => {
     );
 
     const row = result.rows[0] || { total_users: 0, total_games: 0 };
+    console.log("STATS API:", row);
 
     res.json({
       totalUsers: Number(row.total_users) || 0,

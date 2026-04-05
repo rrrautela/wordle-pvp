@@ -16,6 +16,7 @@ export default function GlobalStats() {
         if (!response.ok) return;
 
         const data = await response.json();
+        console.log("API RESPONSE:", data);
         if (!isMounted) return;
 
         setStats({
