@@ -78,6 +78,24 @@ app.get("/api/me", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/api/stats", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT total_users, total_games FROM stats WHERE id = 1",
+    );
+
+    const row = result.rows[0] || { total_users: 0, total_games: 0 };
+
+    res.json({
+      totalUsers: Number(row.total_users) || 0,
+      totalGames: Number(row.total_games) || 0,
+    });
+  } catch (err) {
+    console.error("Stats error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -106,6 +124,10 @@ app.post("/api/register", async (req, res) => {
        VALUES ($1, $2, $3)
        RETURNING id, username, email`,
       [username, email, hashedPassword],
+    );
+
+    await pool.query(
+      "UPDATE stats SET total_users = total_users + 1 WHERE id = 1",
     );
 
     // Return created user (never return password)
@@ -266,6 +288,48 @@ function serializePlayer(player) {
     guesses: Array.isArray(player.guesses) ? player.guesses : [],
     hasWon: !!player.hasWon,
   };
+}
+
+async function recordCompletedGame(game) {
+  if (!game || game.persistedResult || !game.winner) return;
+
+  const host = game.players?.host;
+  const opponent = game.players?.opponent;
+  if (!host?.userId || !opponent?.userId) return;
+
+  const winnerPlayer = game.winner === host.userId ? host : opponent;
+  const loserPlayer = game.winner === host.userId ? opponent : host;
+
+  try {
+    await pool.query(
+      `INSERT INTO games (
+        game_code,
+        winner_id,
+        loser_id,
+        correct_word,
+        attempts_winner,
+        attempts_loser,
+        status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        game.code,
+        winnerPlayer.userId,
+        loserPlayer.userId,
+        game.correctWord || null,
+        winnerPlayer.guesses?.length || 0,
+        loserPlayer.guesses?.length || 0,
+        "completed",
+      ],
+    );
+
+    await pool.query(
+      "UPDATE stats SET total_games = total_games + 1 WHERE id = 1",
+    );
+
+    game.persistedResult = true;
+  } catch (err) {
+    console.error("Record game error:", err);
+  }
 }
 
 function serializeGameState(game) {
@@ -452,6 +516,7 @@ io.on("connection", (socket) => {
       const game = games.get(code);
 
       if (game?.status === "finished") {
+        await recordCompletedGame(game);
         io.to(code).emit("game-ended", {
           winner: game.winner,
           correctWord: game.correctWord,

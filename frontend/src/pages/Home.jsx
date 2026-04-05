@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import GlobalStats from "../components/GlobalStats";
 
 function GameCard({ to, theme, label, title, desc, cta, isNew }) {
   const themes = {
@@ -70,13 +71,23 @@ export default function Home({ user }) {
 
       <div className="relative z-10 mx-auto max-w-5xl">
         <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <p className="text-sm font-medium text-gray-400">
-            Welcome back, {user?.username?.split("_")[0] || "Player"}
-          </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-            Choose a mode
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">Singleplayer or multiplayer.</p>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-400">
+                Welcome back, {user?.username?.split("_")[0] || "Player"}
+              </p>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
+                Choose a mode
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-gray-400">
+                Singleplayer or multiplayer.
+              </p>
+            </div>
+
+            <div className="w-full lg:max-w-[280px] lg:pt-2">
+              <GlobalStats />
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
