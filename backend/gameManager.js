@@ -102,6 +102,7 @@ function createGame(userId, socketId, username = null) {
         userId,
         username,
         socketId,
+        activeSocketId: socketId,
         hasWon: false,
         isProcessing: false,
         guesses: [],
@@ -151,6 +152,7 @@ function joinGame(code, userId, socketId, username = null) {
     userId,
     username,
     socketId,
+    activeSocketId: socketId,
     hasWon: false,
     isProcessing: false,
     guesses: [],
@@ -266,6 +268,16 @@ function endGame(code) {
   if (!game) return;
 
   const { host, opponent } = game.players;
+
+  for (const player of [host, opponent]) {
+    if (player?.reconnectTimer) {
+      clearTimeout(player.reconnectTimer);
+      player.reconnectTimer = null;
+    }
+    if (player) {
+      player.reconnectExpiresAt = null;
+    }
+  }
 
   // remove players from user -> game index
   if (host?.userId) {

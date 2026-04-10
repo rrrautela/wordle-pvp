@@ -12,3 +12,8 @@ build/
 
 # misc
 .DS_Store
+
+
+# reports
+wordle-pvp-report.md
+wordle-pvp-summary.md

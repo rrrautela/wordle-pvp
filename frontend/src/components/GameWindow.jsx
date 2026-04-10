@@ -37,6 +37,7 @@ export default function GameWindow({
   const [opponentPulse, setOpponentPulse] = useState(false);
   const [isOpponentDisconnected, setIsOpponentDisconnected] = useState(false);
   const [reconnectTimer, setReconnectTimer] = useState(60);
+  const [reconnectExpiresAt, setReconnectExpiresAt] = useState(null);
   const [reconnectNotice, setReconnectNotice] = useState("");
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -124,6 +125,7 @@ export default function GameWindow({
   function resetOpponentReconnectState(showNotice = false) {
     setIsOpponentDisconnected(false);
     setReconnectTimer(null);
+    setReconnectExpiresAt(null);
     if (reconnectIntervalRef.current) {
       clearInterval(reconnectIntervalRef.current);
       reconnectIntervalRef.current = null;
@@ -205,20 +207,24 @@ export default function GameWindow({
   }, [showKeyboard, isMobile]);
 
   useEffect(() => {
-    if (!isOpponentDisconnected) return;
+    if (!isOpponentDisconnected || !reconnectExpiresAt) return;
 
-    setReconnectTimer(60);
+    function updateReconnectTimer() {
+      const secondsRemaining = Math.max(
+        0,
+        Math.ceil((reconnectExpiresAt - Date.now()) / 1000),
+      );
+      setReconnectTimer(secondsRemaining);
+
+      if (secondsRemaining <= 0 && reconnectIntervalRef.current) {
+        clearInterval(reconnectIntervalRef.current);
+        reconnectIntervalRef.current = null;
+      }
+    }
+
+    updateReconnectTimer();
     reconnectIntervalRef.current = setInterval(() => {
-      setReconnectTimer((prev) => {
-        if (prev <= 1) {
-          if (reconnectIntervalRef.current) {
-            clearInterval(reconnectIntervalRef.current);
-            reconnectIntervalRef.current = null;
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
+      updateReconnectTimer();
     }, 1000);
 
     return () => {
@@ -227,7 +233,7 @@ export default function GameWindow({
         reconnectIntervalRef.current = null;
       }
     };
-  }, [isOpponentDisconnected]);
+  }, [isOpponentDisconnected, reconnectExpiresAt]);
 
   useEffect(() => {
     if (!reconnectNotice) return;
@@ -245,15 +251,25 @@ export default function GameWindow({
       processResult(result);
     });
 
-    socket.on("opponent_disconnected", () => {
+    socket.on("opponent_disconnected", (payload) => {
       console.log("Opponent disconnected");
+      const expiresAt = payload?.expiresAt || Date.now() + 60000;
       setIsOpponentDisconnected(true);
+      setReconnectExpiresAt(expiresAt);
+      setReconnectTimer(
+        Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)),
+      );
       setReconnectNotice("");
     });
 
     socket.on("sync-state", () => {
       console.log("Opponent reconnected");
       resetOpponentReconnectState(true);
+    });
+
+    socket.on("opponent_reconnected", () => {
+      console.log("Opponent reconnected");
+      setReconnectNotice("Opponent reconnected");
     });
 
     socket.on("game-started", () => {
@@ -300,6 +316,7 @@ export default function GameWindow({
       socket.off("guess-result");
       socket.off("opponent_disconnected");
       socket.off("sync-state");
+      socket.off("opponent_reconnected");
       socket.off("game-started");
       socket.off("game-ended");
       socket.off("play_again_request");

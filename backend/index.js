@@ -325,8 +325,11 @@ function serializePlayer(player) {
   return {
     userId: player.userId,
     username: player.username || null,
+    activeSocketId: player.activeSocketId || player.socketId || null,
     guesses: Array.isArray(player.guesses) ? player.guesses : [],
     hasWon: !!player.hasWon,
+    isConnected: !!player.isConnected,
+    reconnectExpiresAt: player.reconnectExpiresAt || null,
   };
 }
 
@@ -390,13 +393,25 @@ function serializeGameState(game) {
 }
 
 function attachSocketToExistingPlayer(game, socket) {
-  if (!game) return null;
+  if (!game) return { player: null, wasDisconnected: false };
 
   const player = getThePlayer(game, socket.userId);
-  if (!player) return null;
+  if (!player) return { player: null, wasDisconnected: false };
+
+  const wasDisconnected = player.isConnected === false;
+  const oldSocketId = player.activeSocketId || player.socketId;
+
+  // A player can only have one authoritative socket. Force-close the old
+  // transport so stale tabs cannot keep emitting gameplay mutations.
+  if (oldSocketId && oldSocketId !== socket.id) {
+    io.sockets.sockets.get(oldSocketId)?.disconnect(true);
+  }
 
   player.socketId = socket.id;
+  player.activeSocketId = socket.id;
   player.isConnected = true;
+  player.disconnectTime = null;
+  player.reconnectExpiresAt = null;
 
   if (player.reconnectTimer) {
     clearTimeout(player.reconnectTimer);
@@ -404,7 +419,24 @@ function attachSocketToExistingPlayer(game, socket) {
   }
 
   socket.join(game.code);
-  return player;
+  return { player, wasDisconnected };
+}
+
+function getActivePlayerForSocket(socket) {
+  const code = userGameMap.get(socket.userId);
+  if (!code) return { code: null, game: null, player: null };
+
+  const game = games.get(code);
+  if (!game || game.status === "finished") {
+    return { code, game, player: null };
+  }
+
+  const player = getThePlayer(game, socket.userId);
+  if (!player || (player.activeSocketId || player.socketId) !== socket.id) {
+    return { code, game, player: null };
+  }
+
+  return { code, game, player };
 }
 
 function extractFromCookie(cookieString) {
@@ -455,21 +487,47 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id); // Log new socket connection
   socket.isLeavingGame = false;
 
+  function restoreExistingGame(game) {
+    if (!game || game.status === "finished") {
+      socket.emit("game_already_finished");
+      return false;
+    }
+
+    const { player, wasDisconnected } = attachSocketToExistingPlayer(
+      game,
+      socket,
+    );
+    if (!player) return false;
+
+    const opponent = getTheOpponent(game, socket.userId);
+
+    io.to(game.code).emit("sync-state", serializeGameState(game));
+
+    if (wasDisconnected && opponent?.isConnected) {
+      io.to(opponent.socketId).emit("opponent_reconnected");
+    }
+
+    return true;
+  }
+
   const code = userGameMap.get(socket.userId); // Check if this user already belongs to a game
 
   if (code) {
     //user belongs to a game, so treat this connection as a reconnection attempt
 
     const game = games.get(code); // Fetch the game object using the stored game code
-    if (!game) return; // Exit if the game no longer exists
+    if (!game) {
+      socket.emit("game_not_found");
+      return;
+    } // Exit if the game no longer exists
 
     const player = getThePlayer(game, socket.userId); // Identify whether this user is host or opponent
-    if (!player) return; // Exit if user is not found inside the game
+    if (!player) {
+      socket.emit("game_not_found");
+      return;
+    } // Exit if user is not found inside the game
 
-    attachSocketToExistingPlayer(game, socket);
-
-    // send full game state to ONLY this reconnected player
-    socket.emit("sync-state", serializeGameState(game));
+    restoreExistingGame(game);
   } else {
     console.log("user not in a game rn"); // User is not reconnecting to an existing game
   }
@@ -484,8 +542,9 @@ io.on("connection", (socket) => {
     const existingGame = existingCode ? games.get(existingCode) : null;
 
     if (existingGame && getThePlayer(existingGame, socket.userId)) {
-      attachSocketToExistingPlayer(existingGame, socket);
-      socket.emit("room_state", serializeGameState(existingGame));
+      const player = getThePlayer(existingGame, socket.userId);
+      if ((player.activeSocketId || player.socketId) !== socket.id) return;
+      restoreExistingGame(existingGame);
       return;
     }
 
@@ -514,15 +573,17 @@ io.on("connection", (socket) => {
     const existingGame = existingCode ? games.get(existingCode) : null;
 
     if (existingGame && getThePlayer(existingGame, socket.userId)) {
-      attachSocketToExistingPlayer(existingGame, socket);
-      socket.emit("room_state", serializeGameState(existingGame));
+      const player = getThePlayer(existingGame, socket.userId);
+      if ((player.activeSocketId || player.socketId) !== socket.id) return;
+      restoreExistingGame(existingGame);
       return;
     }
 
     const targetGame = games.get(code);
     if (targetGame && getThePlayer(targetGame, socket.userId)) {
-      attachSocketToExistingPlayer(targetGame, socket);
-      socket.emit("room_state", serializeGameState(targetGame));
+      const player = getThePlayer(targetGame, socket.userId);
+      if ((player.activeSocketId || player.socketId) !== socket.id) return;
+      restoreExistingGame(targetGame);
       return;
     }
 
@@ -539,6 +600,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("guess", async (word) => {
+    const { player } = getActivePlayerForSocket(socket);
+    if (!player) return;
+
     const response = handleGuess(socket.userId, word);
     if (!response) return; //neecsary, in case handlegess returns null
 
@@ -567,12 +631,12 @@ io.on("connection", (socket) => {
 
   socket.on("play_again_request", () => {
     const code = userGameMap.get(socket.userId);
-    if (!code) return;
-
-    const game = games.get(code);
+    const game = code ? games.get(code) : null;
     if (!game || game.status !== "finished") return;
 
     const player = getThePlayer(game, socket.userId);
+    if (!player || (player.activeSocketId || player.socketId) !== socket.id) return;
+
     const opponent = getTheOpponent(game, socket.userId);
     if (!player || !opponent?.isConnected) return;
 
@@ -586,10 +650,11 @@ io.on("connection", (socket) => {
 
   socket.on("play_again_accept", () => {
     const code = userGameMap.get(socket.userId);
-    if (!code) return;
-
-    const game = games.get(code);
+    const game = code ? games.get(code) : null;
     if (!game || game.status !== "finished" || !game.rematchRequesterId) return;
+
+    const player = getThePlayer(game, socket.userId);
+    if (!player || (player.activeSocketId || player.socketId) !== socket.id) return;
 
     const resetGame = resetGameSession(code);
     if (!resetGame) return;
@@ -599,10 +664,11 @@ io.on("connection", (socket) => {
 
   socket.on("play_again_reject", () => {
     const code = userGameMap.get(socket.userId);
-    if (!code) return;
-
-    const game = games.get(code);
+    const game = code ? games.get(code) : null;
     if (!game || !game.rematchRequesterId) return;
+
+    const player = getThePlayer(game, socket.userId);
+    if (!player || (player.activeSocketId || player.socketId) !== socket.id) return;
 
     const requester = getThePlayer(game, game.rematchRequesterId);
     game.rematchRequesterId = null;
@@ -614,19 +680,24 @@ io.on("connection", (socket) => {
 
   socket.on("leave_game", () => {
     const code = userGameMap.get(socket.userId);
-    if (!code) return;
+    const game = code ? games.get(code) : null;
+    if (!code || !game) return;
 
-    const game = games.get(code);
-    if (!game) return;
+    const player = getThePlayer(game, socket.userId);
+    if (!player || (player.activeSocketId || player.socketId) !== socket.id) {
+      return;
+    }
 
     socket.isLeavingGame = true;
 
-    const player = getThePlayer(game, socket.userId);
     const opponent = getTheOpponent(game, socket.userId);
 
     if (player?.reconnectTimer) {
       clearTimeout(player.reconnectTimer);
       player.reconnectTimer = null;
+    }
+    if (player) {
+      player.reconnectExpiresAt = null;
     }
 
     socket.leave(code);
@@ -655,35 +726,46 @@ io.on("connection", (socket) => {
     player = getThePlayer(game, socket.userId);
     otherPlayer = getTheOpponent(game, socket.userId);
     if (!player) return;
+    if ((player.activeSocketId || player.socketId) !== socket.id) return;
 
+    if (player.reconnectTimer) {
+      clearTimeout(player.reconnectTimer);
+      player.reconnectTimer = null;
+    }
+  
     player.isConnected = false;
     player.disconnectTime = Date.now();
+    player.reconnectExpiresAt = Date.now() + 60000;
 
     // If an opponent is still there, alert them of the disconnection
     if (otherPlayer?.isConnected) {
-      io.to(otherPlayer.socketId).emit("opponent_disconnected");
+      io.to(otherPlayer.socketId).emit("opponent_disconnected", {
+        expiresAt: player.reconnectExpiresAt,
+      });
     }
 
     player.reconnectTimer = setTimeout(() => {
-      const game = games.get(code); // fetch latest game state
-      if (!game) return;
+      const freshGame = games.get(code); // fetch latest game state
+      if (!freshGame) return;
 
-      const player = getThePlayer(game, socket.userId); // identify same player again
-      if (!player) return;
+      const freshPlayer = getThePlayer(freshGame, socket.userId); // identify same player again
+      if (!freshPlayer) return;
+
+      freshPlayer.reconnectTimer = null;
 
       // if player still not connected after 60 seconds → end game
-      if (!player.isConnected) {
-        const opponent = getTheOpponent(game, socket.userId);
+      if (freshPlayer.isConnected === false) {
+        const opponent = getTheOpponent(freshGame, socket.userId);
 
         if (opponent?.isConnected) {
           //opp wins as user went out
-          game.winner = opponent.userId;
-          io.to(code).emit("game-forfeit", game.winner);
+          freshGame.winner = opponent.userId;
+          io.to(code).emit("game-forfeit", freshGame.winner);
         } else {
-          game.winner = null;
+          freshGame.winner = null;
           io.to(code).emit("game-abandoned");
         }
-        game.status = "finished";
+        freshGame.status = "finished";
         endGame(code);
       }
     }, 60000); // 60s reconnect window
