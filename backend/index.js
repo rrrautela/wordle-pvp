@@ -36,6 +36,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "https://wordle-pvp.vercel.app",
+  "https://wordlepvp.in",
+  "https://www.wordlepvp.in",
 ];
 
 // Allow frontend origin and enable cookies
